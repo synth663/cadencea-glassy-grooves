@@ -1,10 +1,18 @@
 import { useState } from "react";
-import { Search, Library, User } from "lucide-react";
+import { Search, Library, User, Heart, ListMusic, History } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { AuthDialog } from "@/components/AuthDialog";
+import { useNavigate } from "react-router-dom";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export const Navbar = () => {
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <>
@@ -31,9 +39,36 @@ export const Navbar = () => {
 
           {/* Icons */}
           <div className="flex items-center gap-4">
-            <button className="p-2 rounded-full hover:bg-secondary/50 transition-colors">
-              <Library className="h-5 w-5" />
-            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="p-2 rounded-full hover:bg-secondary/50 transition-colors">
+                  <Library className="h-5 w-5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="glass-effect border-border/50 bg-card/95 backdrop-blur-xl">
+                <DropdownMenuItem 
+                  className="cursor-pointer hover:bg-secondary/50 transition-colors"
+                  onClick={() => navigate("/saved-songs")}
+                >
+                  <Heart className="mr-2 h-4 w-4" />
+                  <span>Saved Songs</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className="cursor-pointer hover:bg-secondary/50 transition-colors"
+                  onClick={() => navigate("/playlists")}
+                >
+                  <ListMusic className="mr-2 h-4 w-4" />
+                  <span>Playlists</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  className="cursor-pointer hover:bg-secondary/50 transition-colors"
+                  onClick={() => navigate("/history")}
+                >
+                  <History className="mr-2 h-4 w-4" />
+                  <span>History</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <button 
               className="p-2 rounded-full hover:bg-secondary/50 transition-colors"
               onClick={() => setAuthDialogOpen(true)}
