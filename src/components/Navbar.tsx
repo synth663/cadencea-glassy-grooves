@@ -1,9 +1,15 @@
+import { useState } from "react";
 import { Search, Library, User } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { AuthDialog } from "@/components/AuthDialog";
 
 export const Navbar = () => {
+  const [authDialogOpen, setAuthDialogOpen] = useState(false);
+
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 glass-effect">
+    <>
+      <AuthDialog open={authDialogOpen} onOpenChange={setAuthDialogOpen} />
+      <nav className="fixed top-0 left-0 right-0 z-50 glass-effect">
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
@@ -28,7 +34,10 @@ export const Navbar = () => {
             <button className="p-2 rounded-full hover:bg-secondary/50 transition-colors">
               <Library className="h-5 w-5" />
             </button>
-            <button className="p-2 rounded-full hover:bg-secondary/50 transition-colors">
+            <button 
+              className="p-2 rounded-full hover:bg-secondary/50 transition-colors"
+              onClick={() => setAuthDialogOpen(true)}
+            >
               <User className="h-5 w-5" />
             </button>
           </div>
@@ -47,5 +56,6 @@ export const Navbar = () => {
         </div>
       </div>
     </nav>
+    </>
   );
 };
