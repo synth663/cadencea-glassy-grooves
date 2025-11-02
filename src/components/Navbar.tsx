@@ -1,8 +1,8 @@
-import { useState } from "react";
-import { Search, Library, User, Heart, ListMusic, History } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Search, Library, User, Heart, ListMusic, History, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { AuthDialog } from "@/components/AuthDialog";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,9 +10,55 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
+const MAX_HISTORY = 10;
+let navigationHistory: string[] = [];
+let currentHistoryIndex = -1;
+
 export const Navbar = () => {
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
+  const [canGoBack, setCanGoBack] = useState(false);
+  const [canGoForward, setCanGoForward] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const currentPath = location.pathname;
+    
+    // Only add to history if it's a new navigation (not back/forward)
+    if (currentHistoryIndex === -1 || navigationHistory[currentHistoryIndex] !== currentPath) {
+      // Remove any forward history if we're navigating to a new page
+      navigationHistory = navigationHistory.slice(0, currentHistoryIndex + 1);
+      navigationHistory.push(currentPath);
+      
+      // Keep only last 10 pages
+      if (navigationHistory.length > MAX_HISTORY) {
+        navigationHistory.shift();
+      }
+      
+      currentHistoryIndex = navigationHistory.length - 1;
+    }
+    
+    setCanGoBack(currentHistoryIndex > 0);
+    setCanGoForward(currentHistoryIndex < navigationHistory.length - 1);
+  }, [location]);
+
+  const handleBack = () => {
+    if (currentHistoryIndex > 0) {
+      currentHistoryIndex--;
+      navigate(navigationHistory[currentHistoryIndex]);
+      setCanGoBack(currentHistoryIndex > 0);
+      setCanGoForward(true);
+    }
+  };
+
+  const handleForward = () => {
+    if (currentHistoryIndex < navigationHistory.length - 1) {
+      currentHistoryIndex++;
+      navigate(navigationHistory[currentHistoryIndex]);
+      setCanGoForward(currentHistoryIndex < navigationHistory.length - 1);
+      setCanGoBack(true);
+    }
+  };
 
   return (
     <>
@@ -20,9 +66,32 @@ export const Navbar = () => {
       <nav className="fixed top-0 left-0 right-0 z-50 glass-effect">
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
-          {/* Logo */}
-          <div className="flex items-center">
-            <h1 className="text-2xl font-bold text-gradient">Cadencea</h1>
+          {/* Navigation Controls & Logo */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleBack}
+              disabled={!canGoBack}
+              className={`p-2 rounded-full transition-colors ${
+                canGoBack ? "hover:bg-secondary/50" : "opacity-30 cursor-not-allowed"
+              }`}
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <button
+              onClick={handleForward}
+              disabled={!canGoForward}
+              className={`p-2 rounded-full transition-colors ${
+                canGoForward ? "hover:bg-secondary/50" : "opacity-30 cursor-not-allowed"
+              }`}
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+            <h1 
+              className="text-2xl font-bold text-gradient cursor-pointer" 
+              onClick={() => navigate("/")}
+            >
+              Cadencea
+            </h1>
           </div>
 
           {/* Search Bar */}
