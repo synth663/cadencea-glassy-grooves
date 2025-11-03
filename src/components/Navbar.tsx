@@ -86,12 +86,17 @@ export const Navbar = () => {
             >
               <ChevronRight className="h-5 w-5" />
             </button>
-            <h1 
-              className="text-2xl font-bold text-gradient cursor-pointer" 
-              onClick={() => navigate("/")}
-            >
+            <button
+              onClick={() => window.location.href = '/'}
+              className="text-2xl font-semibold bg-gradient-to-r from-pink-400 to-purple-500 bg-clip-text text-transparent select-none"
+              style={{ cursor: 'pointer' }}
+              >
               Cadencea
-            </h1>
+            </button>
+
+
+
+
           </div>
 
           {/* Search Bar */}

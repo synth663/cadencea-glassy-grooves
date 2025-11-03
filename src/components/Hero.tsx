@@ -14,7 +14,7 @@ export const Hero = () => {
 
       {/* Content */}
       <div className="relative z-10 text-center px-6 max-w-4xl mx-auto">
-        <h1 className="text-5xl md:text-7xl font-bold mb-6 text-gradient leading-tight">
+        <h1 className="text-5xl md:text-7xl font-semibold mb-6 from-pink-400 to-purple-500 bg-clip-text text-gradient leading-tight">
           Welcome to Cadencea
         </h1>
         <p className="text-xl md:text-2xl text-foreground/90 mb-12 font-light">
@@ -23,11 +23,9 @@ export const Hero = () => {
         
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <Button variant="hero" size="lg" className="text-base">
-            Start Singing
+                GET STARTED
           </Button>
-          <Button variant="glass" size="lg" className="text-base">
-            Explore Songs
-          </Button>
+          
         </div>
       </div>
 
