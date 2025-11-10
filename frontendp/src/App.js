@@ -1,0 +1,131 @@
+import "./App.css";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+
+import { AuthProvider } from "./context/useAuth";
+import PrivateRoute from "./components/private_route";
+
+// Import the NavBar layout component
+import NavBar from "./components/NavBar";
+
+import MyBookings from "./components/participant/MyBookings";
+import TicketPage from "./components/participant/TicketPage";
+
+// PUBLIC
+import Login from "./routes/login";
+import Register from "./routes/register";
+
+// PRIVATE
+import { Home } from "./components/home/Home";
+// 1. Import the new TestsPage component
+
+import EventGrid from "./components/admin/EventGrid";
+
+import ParticipantEventGrid from "./components/participant/ParticipantEventGrid";
+import CartPage from "./components/participant/CartPage";
+import CheckoutPage from "./components/participant/CheckoutPage";
+
+import BookingSuccessPage from "./components/participant/BookingSuccessPage";
+
+function App() {
+  return (
+    <Router>
+      <AuthProvider>
+        <Routes>
+          {/* ---------- PUBLIC ROUTES ---------- */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+
+          {/* ---------- PRIVATE ROUTES ---------- */}
+          <Route
+            path="/home"
+            element={
+              <PrivateRoute
+                allowedRoles={["admin", "participant", "organiser"]}
+              >
+                <NavBar content={<Home />} />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/events"
+            element={
+              <PrivateRoute allowedRoles={["admin", "organiser"]}>
+                <NavBar content={<EventGrid />} />
+              </PrivateRoute>
+            }
+          />
+
+          {/* PARTICIPANT EVENTS PAGE */}
+          <Route
+            path="/browse-events"
+            element={
+              <PrivateRoute allowedRoles={["participant", "organiser"]}>
+                <NavBar content={<ParticipantEventGrid />} />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/cart"
+            element={
+              <PrivateRoute allowedRoles={["participant", "organiser"]}>
+                <NavBar content={<CartPage />} />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/my-bookings"
+            element={
+              <PrivateRoute
+                allowedRoles={["participant", "organiser", "admin"]}
+              >
+                <NavBar content={<MyBookings />} />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/ticket/:bookedEventId"
+            element={
+              <PrivateRoute
+                allowedRoles={["participant", "organiser", "admin"]}
+              >
+                <NavBar content={<TicketPage />} />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/checkout"
+            element={
+              <PrivateRoute allowedRoles={["participant", "organiser"]}>
+                <NavBar content={<CheckoutPage />} />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/booking-success/:id"
+            element={
+              <PrivateRoute allowedRoles={["participant", "organiser"]}>
+                <BookingSuccessPage />
+              </PrivateRoute>
+            }
+          />
+
+          {/* ---------- DEFAULT ROUTE ---------- */}
+          {/* Redirects the base URL to /home */}
+          <Route path="/" element={<Navigate to="/home" replace />} />
+        </Routes>
+      </AuthProvider>
+    </Router>
+  );
+}
+
+export default App;
