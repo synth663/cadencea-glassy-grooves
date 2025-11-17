@@ -1,241 +1,245 @@
-import * as React from "react";
-import { Link, useNavigate } from "react-router-dom";
+// src/components/NavBar.jsx
+import React from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../context/useAuth";
 
-// MUI Imports
 import {
-  AppBar,
-  Box,
-  Button,
-  CssBaseline,
-  Drawer,
-  IconButton,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
-  Toolbar,
-  Typography,
-} from "@mui/material";
+  Menu,
+  LogOut,
+  User,
+  BookOpen,
+  Layers,
+  ShoppingCart,
+  Home as HomeIcon,
+  Ticket,
+  Calendar,
+} from "lucide-react";
 
-// Icon Imports
-import MenuIcon from "@mui/icons-material/Menu";
-import LogoutIcon from "@mui/icons-material/Logout";
-import AccountCircleIcon from "@mui/icons-material/AccountCircle";
-import BiotechIcon from "@mui/icons-material/Biotech"; // Tests
-import MedicalServicesIcon from "@mui/icons-material/MedicalServices"; // Doctors
-import BookOnlineIcon from "@mui/icons-material/BookOnline"; // My Bookings
-import DescriptionIcon from "@mui/icons-material/Description"; // Reports
-
-// Width for the mobile drawer
-const DRAWER_WIDTH = 240;
-
-// Navigation items
 function getNavItems(user) {
   if (!user) return [];
 
+  const shared = [
+    { text: "Home", path: "/home", icon: <HomeIcon className="w-6 h-6" /> },
+    {
+      text: "Browse Events",
+      path: "/parent-events",
+      icon: <BookOpen className="w-6 h-6" />,
+    },
+    {
+      text: "My Bookings",
+      path: "/my-bookings",
+      icon: <Ticket className="w-6 h-6" />,
+    },
+    {
+      text: "Cart",
+      path: "/cart",
+      icon: <ShoppingCart className="w-6 h-6" />,
+    },
+  ];
+
   if (user.role === "admin" || user.role === "organiser") {
-    // organiser sees both admin page and participant pages
     return [
-      { text: "Events", path: "/events", icon: <BookOnlineIcon /> }, // manage (admin/organiser)
+      { text: "Events", path: "/events", icon: <Layers className="w-6 h-6" /> },
       {
-        text: "Browse Events",
-        path: "/browse-events",
-        icon: <BookOnlineIcon />,
-      }, // participate
-      { text: "Cart", path: "/cart", icon: <BookOnlineIcon /> }, // participate
-    ];
-  }
-
-  if (user.role === "participant") {
-    return [
-      {
-        text: "Browse Events",
-        path: "/browse-events",
-        icon: <BookOnlineIcon />,
+        text: "All Bookings",
+        path: "/admin/bookings",
+        icon: <Calendar className="w-6 h-6" />,
       },
-      { text: "Cart", path: "/cart", icon: <BookOnlineIcon /> },
+      ...shared,
     ];
   }
 
-  return [];
+  return shared;
 }
 
-function NavBar(props) {
-  const { content } = props;
+export default function NavBar({ content }) {
   const { user, logoutUser } = useAuth();
+  const location = useLocation();
   const navigate = useNavigate();
-  const [mobileOpen, setMobileOpen] = React.useState(false);
+  const [open, setOpen] = React.useState(false);
 
-  // Toggle for mobile drawer
-  const handleDrawerToggle = () => {
-    setMobileOpen((prevState) => !prevState);
-  };
+  const toggle = () => setOpen(!open);
 
-  // Logout handler
+  const isActive = (path) => location.pathname.startsWith(path);
+
   const handleLogout = async () => {
     await logoutUser();
     navigate("/login");
   };
 
-  // Content for the mobile drawer
-  const drawerContent = (
-    <Box onClick={handleDrawerToggle} sx={{ textAlign: "center" }}>
-      {/* Mobile Logo */}
-      <Typography
-        variant="h6"
-        sx={{ my: 2, fontWeight: "bold" }}
-        component={Link}
-        to="/"
-        color="inherit"
-        style={{ textDecoration: "none" }}
-      >
-        UnifyEvents
-      </Typography>
-
-      <List>
-        {/* Page links */}
-        {getNavItems(user).map((item) => (
-          <ListItem key={item.text} disablePadding>
-            <ListItemButton component={Link} to={item.path}>
-              <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.text} />
-            </ListItemButton>
-          </ListItem>
-        ))}
-
-        {/* Profile Link */}
-        <ListItem disablePadding>
-          <ListItemButton component={Link} to="/home">
-            <ListItemIcon>
-              <AccountCircleIcon />
-            </ListItemIcon>
-            <ListItemText primary="Profile" />
-          </ListItemButton>
-        </ListItem>
-
-        {/* Logout Button */}
-        {user && (
-          <ListItem disablePadding>
-            <ListItemButton onClick={handleLogout}>
-              <ListItemIcon>
-                <LogoutIcon />
-              </ListItemIcon>
-              <ListItemText primary="Logout" />
-            </ListItemButton>
-          </ListItem>
-        )}
-      </List>
-    </Box>
-  );
-
   return (
-    <Box sx={{ display: "flex" }}>
-      <CssBaseline />
-
-      {/* Top Application Bar */}
-      <AppBar
-        component="nav"
-        position="fixed"
-        sx={{
-          bgcolor: "#fff", // White background
-          color: "#000", // Black text/icons
-          borderBottom: "1px solid #e0e0e0", // Subtle border
-          boxShadow: "none", // Modern flat look
-        }}
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      {/* TOP NAVBAR */}
+      <header
+        className="fixed inset-x-0 top-0 z-50 bg-white/90 backdrop-blur-md 
+                         border-b border-purple-200 shadow-sm"
       >
-        <Toolbar>
-          {/* Mobile Hamburger Menu Icon */}
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
-            onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { sm: "none" } }}
-          >
-            <MenuIcon />
-          </IconButton>
-
-          {/* Left Side Logo (visible on all sizes) */}
-          <Typography
-            variant="h6"
-            component={Link}
-            to="/"
-            sx={{
-              flexGrow: 1,
-              fontWeight: "bold",
-              color: "inherit",
-              textDecoration: "none",
-            }}
-          >
-            UnifyEvents
-          </Typography>
-
-          {/* Desktop Navigation Links */}
-          <Box sx={{ display: { xs: "none", sm: "block" } }}>
-            {getNavItems(user).map((item) => (
-              <Button
-                key={item.text}
-                component={Link}
-                to={item.path}
-                sx={{
-                  color: "inherit",
-                  textTransform: "none",
-                  fontSize: "1rem",
-                  mx: 1,
-                }}
-                startIcon={item.icon}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* LEFT */}
+            <div className="flex items-center gap-4">
+              <button
+                onClick={toggle}
+                className="p-2 rounded-md hover:bg-gray-100 md:hidden"
               >
-                {item.text}
-              </Button>
-            ))}
+                <Menu className="w-6 h-6 text-gray-700" />
+              </button>
 
-            {/* Desktop Profile & Logout */}
-            <IconButton component={Link} to="/home" color="inherit">
-              <AccountCircleIcon />
-            </IconButton>
+              <Link to="/" className="flex items-center gap-2">
+                <div className="w-10 h-10 rounded-xl bg-purple-700 flex items-center justify-center shadow-md">
+                  <span className="text-white text-xl font-bold">U</span>
+                </div>
+                <span className="text-gray-900 font-semibold text-lg">
+                  UnifyEvents
+                </span>
+              </Link>
+            </div>
 
-            {user && (
-              <IconButton onClick={handleLogout} color="inherit">
-                <LogoutIcon />
-              </IconButton>
-            )}
-          </Box>
-        </Toolbar>
-      </AppBar>
+            {/* DESKTOP NAV */}
+            <nav className="hidden md:flex items-center gap-2">
+              {getNavItems(user).map((item) => (
+                <Link
+                  to={item.path}
+                  key={item.text}
+                  className="relative px-4 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                >
+                  {item.icon}
+                  {item.text}
 
-      {/* Navigation component (for mobile drawer) */}
-      <Box component="nav">
-        <Drawer
-          variant="temporary"
-          open={mobileOpen}
-          onClose={handleDrawerToggle}
-          ModalProps={{
-            keepMounted: true, // Better open performance on mobile.
-          }}
-          sx={{
-            display: { xs: "block", sm: "none" },
-            "& .MiuDrawer-paper": {
-              boxSizing: "border-box",
-              width: DRAWER_WIDTH,
-            },
-          }}
-        >
-          {drawerContent}
-        </Drawer>
-      </Box>
+                  {isActive(item.path) && (
+                    <motion.div
+                      layoutId="navbar-underline"
+                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-600 rounded-full"
+                    />
+                  )}
+                </Link>
+              ))}
+            </nav>
 
-      {/* Main Content Area */}
-      <Box component="main" sx={{ flexGrow: 1, p: 3, width: "100%" }}>
-        {/* This Toolbar adds the necessary space to push content below the AppBar */}
-        <Toolbar />
+            {/* RIGHT ICONS */}
+            <div className="hidden md:flex gap-3">
+              <Link to="/profile" className="p-2 rounded-lg hover:bg-gray-100">
+                <User className="w-6 h-6 text-purple-700" />
+              </Link>
 
-        {/* Your page content (e.g., <CTS />) will be rendered here */}
-        {content}
-      </Box>
-    </Box>
+              <button
+                onClick={handleLogout}
+                className="p-2 rounded-lg hover:bg-gray-100"
+              >
+                <LogOut className="w-6 h-6 text-red-600" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* MOBILE DRAWER */}
+      <AnimatePresence>
+        {open && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.4 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setOpen(false)}
+              className="fixed inset-0 bg-black/40 z-40"
+            />
+
+            <motion.aside
+              initial={{ x: "-100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "-100%" }}
+              transition={{ type: "spring", stiffness: 260, damping: 25 }}
+              className="fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-xl border-r"
+            >
+              <div className="p-4 border-b flex items-center gap-3">
+                <div className="w-10 h-10 bg-purple-700 rounded-xl flex items-center justify-center text-white font-bold">
+                  U
+                </div>
+                <span className="text-gray-900 text-lg font-semibold">
+                  UnifyEvents
+                </span>
+              </div>
+
+              <ul className="p-3 space-y-1">
+                {getNavItems(user).map((item) => (
+                  <li key={item.text}>
+                    <Link
+                      to={item.path}
+                      onClick={() => setOpen(false)}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-lg ${
+                        isActive(item.path)
+                          ? "bg-purple-100 text-purple-700 font-medium"
+                          : "text-gray-800 hover:bg-gray-100"
+                      }`}
+                    >
+                      {item.icon}
+                      {item.text}
+                    </Link>
+                  </li>
+                ))}
+
+                <button
+                  onClick={() => {
+                    setOpen(false);
+                    handleLogout();
+                  }}
+                  className="flex w-full items-center gap-3 px-4 py-3 rounded-lg hover:bg-red-50 text-red-600"
+                >
+                  <LogOut className="w-5 h-5" />
+                  Logout
+                </button>
+              </ul>
+            </motion.aside>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* MOBILE BOTTOM NAVBAR */}
+      <nav className="md:hidden fixed bottom-4 inset-x-0 z-50 flex justify-center">
+        <div className="bg-white shadow-2xl border border-gray-200 rounded-3xl px-6 py-3 flex items-center gap-8">
+          {[
+            { icon: <HomeIcon />, path: "/home" },
+            { icon: <BookOpen />, path: "/browse-events" },
+            { icon: <Ticket />, path: "/my-bookings" },
+            { icon: <ShoppingCart />, path: "/cart" },
+            { icon: <User />, path: "/profile" },
+          ].map((item, i) => {
+            const active = isActive(item.path);
+
+            return (
+              <Link
+                to={item.path}
+                key={i}
+                className="relative flex flex-col items-center"
+              >
+                <motion.div
+                  animate={{
+                    scale: active ? 1.25 : 1,
+                    color: active ? "#7c3aed" : "#6b7280",
+                  }}
+                  className={`text-gray-500`}
+                >
+                  {React.cloneElement(item.icon, {
+                    className: "w-6 h-6",
+                  })}
+                </motion.div>
+
+                {active && (
+                  <motion.div
+                    layoutId="mobile-indicator"
+                    className="absolute -bottom-1 w-2 h-2 bg-purple-600 rounded-full"
+                  />
+                )}
+              </Link>
+            );
+          })}
+        </div>
+      </nav>
+
+      {/* MAIN CONTENT */}
+      <main className="flex-1 pt-16 pb-24 md:pb-0">{content}</main>
+    </div>
   );
 }
-
-export default NavBar;

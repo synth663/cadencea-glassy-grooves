@@ -23,6 +23,7 @@ class Category(models.Model):
 
 class ParentEvent(models.Model):
     name = models.CharField(max_length=200)
+    image = models.ImageField(upload_to="parent_events/", blank=True, null=True)  # OPTIONAL
 
     def __str__(self):
         return self.name
@@ -31,15 +32,24 @@ class ParentEvent(models.Model):
 class Event(models.Model):
     parent_committee = models.CharField(max_length=200)
     name = models.CharField(max_length=200)
-    parent_event = models.ForeignKey(ParentEvent, on_delete=models.SET_NULL, null=True, blank=True)
-    category = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True)
+    parent_event = models.ForeignKey(
+        ParentEvent, on_delete=models.SET_NULL, null=True, blank=True
+    )
+    category = models.ForeignKey(
+        Category, on_delete=models.SET_NULL, null=True, blank=True
+    )
     price = models.DecimalField(max_digits=9, decimal_places=2, default=0)
     exclusivity = models.BooleanField(default=False)
 
-    organisers = models.ManyToManyField(Organiser, related_name='events', blank=True)
+    image = models.ImageField(upload_to="events/", blank=True, null=True)  # OPTIONAL
+
+    organisers = models.ManyToManyField(
+        Organiser, related_name='events', blank=True
+    )
 
     def __str__(self):
         return self.name
+
 
 
 BOOKING_TYPES = (

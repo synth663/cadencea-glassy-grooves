@@ -48,7 +48,12 @@ export const login = async (username, password) => {
   return response.data;
 };
 
-export const register = async (username, email, password, role = "patient") => {
+export const register = async (
+  username,
+  email,
+  password,
+  role = "participant"
+) => {
   const response = await authApiClient.post("register/", {
     username,
     email,

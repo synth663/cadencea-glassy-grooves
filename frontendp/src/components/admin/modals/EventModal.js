@@ -10,6 +10,8 @@ import {
   FormControlLabel,
   Checkbox,
   MenuItem,
+  Box,
+  Typography,
 } from "@mui/material";
 import EventService from "../EventService";
 
@@ -31,6 +33,10 @@ export default function EventModal({
     exclusivity: false,
   });
 
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+
+  // Fetch categories & parent events
   useEffect(() => {
     if (open) {
       EventService.getCategories().then((res) => setCategories(res.data));
@@ -38,6 +44,7 @@ export default function EventModal({
     }
   }, [open]);
 
+  // Fill edit mode data
   useEffect(() => {
     if (editEventData) {
       setForm({
@@ -48,6 +55,14 @@ export default function EventModal({
         price: editEventData.price,
         exclusivity: editEventData.exclusivity,
       });
+
+      // Existing image preview
+      if (editEventData.image) {
+        setImagePreview(editEventData.image);
+      } else {
+        setImagePreview(null);
+      }
+      setImageFile(null);
     } else {
       setForm({
         parent_committee: "",
@@ -57,25 +72,55 @@ export default function EventModal({
         price: "0",
         exclusivity: false,
       });
+      setImageFile(null);
+      setImagePreview(null);
     }
   }, [editEventData, open]);
 
-  const handleSubmit = async () => {
-    if (editEventData) {
-      await EventService.updateEvent(editEventData.id, form);
-    } else {
-      await EventService.createEvent(form);
+  // Handle image selection
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImageFile(file);
+      setImagePreview(URL.createObjectURL(file));
     }
-    refreshEvents();
-    onClose();
+  };
+
+  // Handle Create / Edit
+  const handleSubmit = async () => {
+    const formData = new FormData();
+
+    Object.entries(form).forEach(([key, value]) => {
+      if (value !== null && value !== undefined) {
+        formData.append(key, value);
+      }
+    });
+
+    if (imageFile) {
+      formData.append("image", imageFile);
+    }
+
+    try {
+      if (editEventData) {
+        await EventService.updateEvent(editEventData.id, formData);
+      } else {
+        await EventService.createEvent(formData);
+      }
+      refreshEvents();
+      onClose();
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth>
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
       <DialogTitle>
         {editEventData ? "Edit Event" : "Add New Event"}
       </DialogTitle>
+
       <DialogContent>
+        {/* Parent Committee */}
         <TextField
           label="Parent Committee"
           fullWidth
@@ -85,6 +130,8 @@ export default function EventModal({
             setForm({ ...form, parent_committee: e.target.value })
           }
         />
+
+        {/* Event Name */}
         <TextField
           label="Event Name"
           fullWidth
@@ -93,6 +140,7 @@ export default function EventModal({
           onChange={(e) => setForm({ ...form, name: e.target.value })}
         />
 
+        {/* Parent Event */}
         <TextField
           select
           label="Parent Event"
@@ -109,6 +157,7 @@ export default function EventModal({
           ))}
         </TextField>
 
+        {/* Category */}
         <TextField
           select
           label="Category"
@@ -125,6 +174,7 @@ export default function EventModal({
           ))}
         </TextField>
 
+        {/* Price */}
         <TextField
           label="Price"
           type="number"
@@ -133,6 +183,8 @@ export default function EventModal({
           value={form.price}
           onChange={(e) => setForm({ ...form, price: e.target.value })}
         />
+
+        {/* Exclusivity */}
         <FormControlLabel
           control={
             <Checkbox
@@ -144,10 +196,44 @@ export default function EventModal({
           }
           label="Exclusive Event"
         />
+
+        {/* —— IMAGE UPLOAD —— */}
+        <Box mt={2}>
+          <Typography variant="subtitle1" fontWeight="bold">
+            Event Image
+          </Typography>
+
+          <Button variant="outlined" component="label" sx={{ mt: 1 }}>
+            Upload Image
+            <input
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={handleImageChange}
+            />
+          </Button>
+
+          {/* Preview */}
+          {imagePreview && (
+            <Box mt={2} display="flex" justifyContent="center">
+              <img
+                src={imagePreview}
+                alt="Preview"
+                style={{
+                  width: "100%",
+                  maxHeight: "250px",
+                  objectFit: "cover",
+                  borderRadius: "12px",
+                }}
+              />
+            </Box>
+          )}
+        </Box>
       </DialogContent>
+
       <DialogActions>
         <Button onClick={onClose}>Cancel</Button>
-        <Button onClick={handleSubmit} variant="contained">
+        <Button variant="contained" onClick={handleSubmit}>
           {editEventData ? "Save Changes" : "Create Event"}
         </Button>
       </DialogActions>

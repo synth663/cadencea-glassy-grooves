@@ -27,34 +27,57 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = ['id', 'name']
 
-
 class ParentEventSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(required=False, allow_null=True)
+
     class Meta:
         model = ParentEvent
-        fields = ['id', 'name']
+        fields = ['id', 'name', 'image']
 
 
 class EventSerializer(serializers.ModelSerializer):
     constraint_id = serializers.IntegerField(source="constraint.id", read_only=True)
     details_id = serializers.IntegerField(source="details.id", read_only=True)
+
     organisers = serializers.PrimaryKeyRelatedField(
         many=True, queryset=Organiser.objects.all(), required=False
     )
+
+    image = serializers.ImageField(required=False, allow_null=True)
+
     parent_committee = serializers.CharField(required=False)
     name = serializers.CharField(required=False)
-    parent_event = serializers.PrimaryKeyRelatedField(queryset=ParentEvent.objects.all(), allow_null=True, required=False)
-    category = serializers.PrimaryKeyRelatedField(queryset=Category.objects.all(), allow_null=True, required=False)
+
+    parent_event = serializers.PrimaryKeyRelatedField(
+        queryset=ParentEvent.objects.all(),
+        allow_null=True,
+        required=False
+    )
+
+    category = serializers.PrimaryKeyRelatedField(
+        queryset=Category.objects.all(),
+        allow_null=True,
+        required=False
+    )
+
     price = serializers.DecimalField(max_digits=9, decimal_places=2, required=False)
     exclusivity = serializers.BooleanField(required=False)
 
     class Meta:
         model = Event
         fields = [
-    'id', 'parent_committee', 'name',
-    'parent_event', 'category', 'price', 'exclusivity',
-    'organisers',
-    'constraint_id', 'details_id'
-]
+            'id',
+            'parent_committee',
+            'name',
+            'parent_event',
+            'category',
+            'price',
+            'exclusivity',
+            'organisers',
+            'image',               # NEW
+            'constraint_id',
+            'details_id'
+        ]
 
 
 

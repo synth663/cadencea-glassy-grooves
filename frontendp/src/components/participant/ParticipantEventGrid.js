@@ -1,14 +1,5 @@
-// src/components/participant/ParticipantEventGrid.jsx
 import React, { useEffect, useState } from "react";
-import {
-  Box,
-  Typography,
-  Grid,
-  CircularProgress,
-  TextField,
-  Snackbar,
-  Alert,
-} from "@mui/material";
+import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/useAuth";
 import ParticipantService from "./ParticipantService";
@@ -30,14 +21,14 @@ export default function ParticipantEventGrid() {
     severity: "success",
   });
 
-  // flow state
+  // Flow state
   const [activeEvent, setActiveEvent] = useState(null);
   const [constraint, setConstraint] = useState(null);
   const [participantsCount, setParticipantsCount] = useState(1);
   const [participantsData, setParticipantsData] = useState([]);
   const [pickedSlot, setPickedSlot] = useState(null);
 
-  // modals
+  // Modals
   const [openCount, setOpenCount] = useState(false);
   const [openDetails, setOpenDetails] = useState(false);
   const [openSlot, setOpenSlot] = useState(false);
@@ -90,9 +81,8 @@ export default function ParticipantEventGrid() {
       }
     }
 
-    setConstraint(c); // storing for later
+    setConstraint(c);
 
-    // ------------------ FLOW DECISION RIGHT HERE ------------------
     if (!c || c.booking_type === "single") {
       setParticipantsCount(1);
       setOpenDetails(true);
@@ -105,7 +95,6 @@ export default function ParticipantEventGrid() {
       return;
     }
 
-    // multiple and not fixed
     setOpenCount(true);
   };
 
@@ -150,16 +139,20 @@ export default function ParticipantEventGrid() {
         slot: slot.id,
       });
 
-      setAlert({ open: true, message: "Added to cart!", severity: "success" });
+      setAlert({
+        open: true,
+        message: "Added to cart!",
+        severity: "success",
+      });
 
-      // reset flow
+      // Reset
       setActiveEvent(null);
       setConstraint(null);
       setParticipantsCount(1);
       setParticipantsData([]);
       setPickedSlot(null);
-    } catch (e) {
-      console.error(e);
+    } catch (err) {
+      console.error(err);
       setAlert({
         open: true,
         message: "Failed to add to cart.",
@@ -169,37 +162,54 @@ export default function ParticipantEventGrid() {
   };
 
   return (
-    <Box sx={{ p: 4 }}>
-      <Typography variant="h4" sx={{ mb: 3, fontWeight: "bold" }}>
+    <div className="p-6 max-w-7xl mx-auto">
+      {/* Title */}
+      <motion.h1
+        className="text-4xl font-bold mb-6 bg-gradient-to-r from-pink-500 to-purple-500 text-transparent bg-clip-text"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+      >
         🛒 Browse Events
-      </Typography>
+      </motion.h1>
 
-      <TextField
+      {/* Search Bar */}
+      <motion.input
+        type="text"
         placeholder="Search events..."
-        fullWidth
-        sx={{ mb: 3 }}
         value={search}
         onChange={(e) => setSearch(e.target.value)}
+        className="w-full px-4 py-3 mb-6 rounded-xl border border-purple-300 
+        bg-white shadow-md focus:ring-2 focus:ring-pink-400 outline-none transition-all"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
       />
 
+      {/* Loading state */}
       {fetching ? (
-        <CircularProgress />
+        <div className="flex justify-center py-10">
+          <motion.div className="w-10 h-10 border-4 border-pink-400 border-t-transparent rounded-full animate-spin" />
+        </div>
       ) : (
-        <Grid container spacing={3}>
+        <motion.div
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+          initial="hidden"
+          animate="visible"
+          transition={{ staggerChildren: 0.1 }}
+        >
           {events
             .filter((e) => e.name.toLowerCase().includes(search.toLowerCase()))
             .map((ev) => (
-              <Grid item xs={12} sm={6} md={4} key={ev.id}>
-                <ParticipantEventCard
-                  event={ev}
-                  onAddToCart={() => startAddToCart(ev)}
-                />
-              </Grid>
+              <ParticipantEventCard
+                key={ev.id}
+                event={ev}
+                onAddToCart={() => startAddToCart(ev)}
+              />
             ))}
-        </Grid>
+        </motion.div>
       )}
 
-      {!!activeEvent && (
+      {/* Modals */}
+      {activeEvent && (
         <ParticipantCountModal
           open={openCount}
           onClose={() => {
@@ -212,7 +222,7 @@ export default function ParticipantEventGrid() {
         />
       )}
 
-      {!!activeEvent && (
+      {activeEvent && (
         <ParticipantDetailsModal
           open={openDetails}
           onClose={() => {
@@ -225,7 +235,7 @@ export default function ParticipantEventGrid() {
         />
       )}
 
-      {!!activeEvent && (
+      {activeEvent && (
         <SlotPickModal
           open={openSlot}
           onClose={() => {
@@ -236,17 +246,25 @@ export default function ParticipantEventGrid() {
           event={activeEvent}
           participantsCount={participantsCount}
           onPick={handleSlotPicked}
-          fetchSlots={(eventId) => ParticipantService.getEventSlots(eventId)}
+          fetchSlots={(id) => ParticipantService.getEventSlots(id)}
         />
       )}
 
-      <Snackbar
-        open={alert.open}
-        autoHideDuration={3500}
-        onClose={() => setAlert({ ...alert, open: false })}
-      >
-        <Alert severity={alert.severity}>{alert.message}</Alert>
-      </Snackbar>
-    </Box>
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {alert.open && (
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className={`fixed bottom-6 right-6 px-5 py-3 rounded-xl shadow-xl text-white ${
+              alert.severity === "success" ? "bg-green-500" : "bg-red-500"
+            }`}
+          >
+            {alert.message}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

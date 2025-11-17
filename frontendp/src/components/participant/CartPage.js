@@ -1,42 +1,36 @@
 // src/components/participant/CartPage.jsx
 import React, { useEffect, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  Grid,
-  Divider,
-  IconButton,
-  TextField,
-  Button,
-  Stack,
-  Snackbar,
-  Alert,
-  Tooltip,
-  Paper,
-} from "@mui/material";
-import DeleteIcon from "@mui/icons-material/Delete";
-import SaveIcon from "@mui/icons-material/Save";
-import AddIcon from "@mui/icons-material/Add";
-import RemoveCircleOutlineIcon from "@mui/icons-material/RemoveCircleOutline";
-import ChangeCircleIcon from "@mui/icons-material/ChangeCircle";
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+  Trash2,
+  Save,
+  Plus,
+  MinusCircle,
+  RefreshCw,
+  ArrowRight,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 import ParticipantService from "./ParticipantService";
 import ParticipantDetailsModal from "./modals/ParticipantDetailsModal";
 import SlotPickModal from "./modals/SlotPickModal";
 
+/**
+ * Reworked CartPage — Flat purple/pink theme (NO gradients)
+ * - Theme B chosen: stronger, flat color surfaces (purple + pink)
+ * - Preserves all logic, API calls & modal behavior
+ * - Adds nicer spacing, shadows, consistent borders and micro-animations
+ */
+
 export default function CartPage() {
   const navigate = useNavigate();
 
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [alert, setAlert] = useState({
+  const [toast, setToast] = useState({
     open: false,
     message: "",
-    severity: "success",
+    kind: "success",
   });
 
   // constraints cache { [eventId]: constraintObj|null }
@@ -52,24 +46,28 @@ export default function CartPage() {
   const [slotTargetItem, setSlotTargetItem] = useState(null);
   const [slotTeamCount, setSlotTeamCount] = useState(0);
 
+  useEffect(() => {
+    loadCart();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const loadCart = async () => {
     setLoading(true);
     try {
       const res = await ParticipantService.getCart();
       setCart(res.data);
+    } catch (err) {
+      console.error("loadCart", err);
+      showToast("Failed to load cart", "error");
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    loadCart();
-  }, []);
-
-  const showError = (msg) =>
-    setAlert({ open: true, message: msg, severity: "error" });
-  const showInfo = (msg) =>
-    setAlert({ open: true, message: msg, severity: "success" });
+  const showToast = (msg, kind = "success") => {
+    setToast({ open: true, message: msg, kind });
+    setTimeout(() => setToast((s) => ({ ...s, open: false })), 3500);
+  };
 
   const getConstraint = async (eventId) => {
     if (constraints[eventId] !== undefined) return constraints[eventId];
@@ -89,7 +87,7 @@ export default function CartPage() {
     if (constraint.booking_type === "single") return false;
     if (constraint.booking_type === "multiple" && constraint.fixed)
       return false;
-    return true; // multiple open range
+    return true;
   };
 
   const validateCount = (constraint, newCount) => {
@@ -115,103 +113,121 @@ export default function CartPage() {
 
   const handleDeleteItem = async (itemId) => {
     if (!window.confirm("Remove this event from cart?")) return;
-    await ParticipantService.deleteCartItem(itemId);
-    await loadCart();
-    showInfo("Removed from cart.");
+    try {
+      await ParticipantService.deleteCartItem(itemId);
+      await loadCart();
+      showToast("Removed from cart", "success");
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to remove item", "error");
+    }
   };
 
-  // Save inline participant row
   const handleSaveParticipant = async (p) => {
-    if (!p.name.trim()) return showError("Participant name is required.");
-    await ParticipantService.updateTempBooking(p.id, {
-      name: p.name,
-      email: p.email || null,
-      phone_number: p.phone_number || null,
-    });
-    showInfo("Saved.");
+    if (!p.name || !p.name.trim())
+      return showToast("Participant name is required", "error");
+    try {
+      await ParticipantService.updateTempBooking(p.id, {
+        name: p.name,
+        email: p.email || null,
+        phone_number: p.phone_number || null,
+      });
+      showToast("Saved.", "success");
+      await loadCart();
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to save participant", "error");
+    }
   };
 
-  // Remove participant (only allowed for multiple non-fixed)
   const handleRemoveParticipant = async (item, participant) => {
     const c = await getConstraint(item.event);
     if (!canEditCount(c)) {
-      return showError("Cannot remove participants for this event.");
+      return showToast("Cannot remove participants for this event", "error");
     }
     const newCount = item.participants_count - 1;
     const err = validateCount(c, newCount);
-    if (err) return showError(err);
+    if (err) return showToast(err, "error");
 
-    await ParticipantService.deleteTempBooking(participant.id);
-    await ParticipantService.updateCartItem(item.id, {
-      participants_count: newCount,
-    });
-
-    await loadCart();
-    showInfo("Participant removed.");
+    try {
+      await ParticipantService.deleteTempBooking(participant.id);
+      await ParticipantService.updateCartItem(item.id, {
+        participants_count: newCount,
+      });
+      await loadCart();
+      showToast("Participant removed", "success");
+    } catch (e) {
+      console.error(e);
+      showToast("Failed to remove participant", "error");
+    }
   };
 
-  // Add one participant (open modal to collect 1 participant)
   const handleAddOneParticipant = async (item) => {
     const c = await getConstraint(item.event);
     if (!canEditCount(c)) {
-      return showError("Cannot add participants for this event.");
+      return showToast("Cannot add participants for this event", "error");
     }
     const newCount = item.participants_count + 1;
     const err = validateCount(c, newCount);
-    if (err) return showError(err);
+    if (err) return showToast(err, "error");
 
     setAddTargetItem(item);
     setAddModalCount(1);
     setAddModalOpen(true);
   };
 
-  // after collecting extra participants via modal
   const onAddParticipantsCollected = async (list) => {
     const item = addTargetItem;
     if (!item) return;
     const extra = list.length;
 
-    await ParticipantService.updateCartItem(item.id, {
-      participants_count: item.participants_count + extra,
-    });
-
-    for (const p of list) {
-      await ParticipantService.createTempBooking({
-        cart_item: item.id,
-        name: p.name,
-        email: p.email || null,
-        phone_number: p.phone_number || null,
+    try {
+      await ParticipantService.updateCartItem(item.id, {
+        participants_count: item.participants_count + extra,
       });
-    }
 
-    const updatedCart = (await ParticipantService.getCart()).data;
-    const updatedItem = updatedCart.items.find((ci) => ci.id === item.id);
-    if (updatedItem?.temp_timeslot?.slot) {
-      const slotRes = await ParticipantService.getEventSlotById(
-        updatedItem.temp_timeslot.slot
-      );
-      const s = slotRes.data;
-      if (!s.unlimited_participants) {
-        const need = updatedItem.participants_count;
-        if ((s.available_participants ?? 0) < need) {
-          setSlotTargetItem(updatedItem);
-          setSlotTeamCount(need);
-          setSlotModalOpen(true);
-          setAddModalOpen(false);
-          await loadCart();
-          return;
+      for (const p of list) {
+        await ParticipantService.createTempBooking({
+          cart_item: item.id,
+          name: p.name,
+          email: p.email || null,
+          phone_number: p.phone_number || null,
+        });
+      }
+
+      // After adding, check slot availability for assigned slot (if any)
+      const updatedCart = (await ParticipantService.getCart()).data;
+      const updatedItem = updatedCart.items.find((ci) => ci.id === item.id);
+      if (updatedItem?.temp_timeslot?.slot) {
+        const slotRes = await ParticipantService.getEventSlotById(
+          updatedItem.temp_timeslot.slot
+        );
+        const s = slotRes.data;
+        if (!s.unlimited_participants) {
+          const need = updatedItem.participants_count;
+          if ((s.available_participants ?? 0) < need) {
+            setSlotTargetItem(updatedItem);
+            setSlotTeamCount(need);
+            setSlotModalOpen(true);
+            setAddModalOpen(false);
+            await loadCart();
+            return;
+          }
         }
       }
-    }
 
-    setAddTargetItem(null);
-    setAddModalOpen(false);
-    await loadCart();
-    showInfo("Participant added.");
+      setAddTargetItem(null);
+      setAddModalOpen(false);
+      await loadCart();
+      showToast("Participant(s) added", "success");
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to add participants", "error");
+    }
   };
 
-  // change count by directly typing a number and saving
-  const [countDraft, setCountDraft] = useState({}); // { [cartItemId]: number }
+  // Manage drafts for counts
+  const [countDraft, setCountDraft] = useState({});
   const handleCountDraftChange = (itemId, val) => {
     setCountDraft((prev) => ({ ...prev, [itemId]: val }));
   };
@@ -220,34 +236,38 @@ export default function CartPage() {
     const target = Number(countDraft[item.id] ?? item.participants_count);
     const c = await getConstraint(item.event);
     const err = validateCount(c, target);
-    if (err) return showError(err);
+    if (err) return showToast(err, "error");
 
     const current = item.participants_count;
     if (target === current) return;
 
-    if (target < current) {
-      const delta = current - target;
-      const toDelete = item.temp_participants.slice(-delta);
-      for (const p of toDelete) {
-        await ParticipantService.deleteTempBooking(p.id);
+    try {
+      if (target < current) {
+        const delta = current - target;
+        const toDelete = item.temp_participants.slice(-delta);
+        for (const p of toDelete) {
+          await ParticipantService.deleteTempBooking(p.id);
+        }
+        await ParticipantService.updateCartItem(item.id, {
+          participants_count: target,
+        });
+        await loadCart();
+        showToast("Updated team size", "success");
+        return;
       }
-      await ParticipantService.updateCartItem(item.id, {
-        participants_count: target,
-      });
-      await loadCart();
-      showInfo("Updated team size.");
-      return;
-    }
 
-    if (target > current) {
-      const delta = target - current;
-      setAddTargetItem(item);
-      setAddModalCount(delta);
-      setAddModalOpen(true);
+      if (target > current) {
+        const delta = target - current;
+        setAddTargetItem(item);
+        setAddModalCount(delta);
+        setAddModalOpen(true);
+      }
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to update team size", "error");
     }
   };
 
-  // change slot
   const handleChangeSlot = (item) => {
     setSlotTargetItem(item);
     setSlotTeamCount(item.participants_count);
@@ -258,292 +278,315 @@ export default function CartPage() {
     const item = slotTargetItem;
     if (!item) return;
 
-    if (item.temp_timeslot) {
-      await ParticipantService.updateTempTimeslot(item.temp_timeslot.id, {
-        cart_item: item.id,
-        slot: slot.id,
-      });
-    } else {
-      await ParticipantService.createTempTimeslot({
-        cart_item: item.id,
-        slot: slot.id,
-      });
+    try {
+      if (item.temp_timeslot) {
+        await ParticipantService.updateTempTimeslot(item.temp_timeslot.id, {
+          cart_item: item.id,
+          slot: slot.id,
+        });
+      } else {
+        await ParticipantService.createTempTimeslot({
+          cart_item: item.id,
+          slot: slot.id,
+        });
+      }
+      setSlotTargetItem(null);
+      setSlotModalOpen(false);
+      await loadCart();
+      showToast("Slot updated", "success");
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to update slot", "error");
     }
-
-    setSlotTargetItem(null);
-    setSlotModalOpen(false);
-    await loadCart();
-    showInfo("Slot updated.");
   };
 
-  // helpers
+  // price helpers
   const lineTotal = (item) =>
     Number(item.event_price || 0) * Number(item.participants_count || 0) || 0;
-
   const grandTotal =
     cart?.items?.reduce((sum, it) => sum + lineTotal(it), 0) || 0;
 
+  // UI Animations - variants
+  const container = {
+    hidden: {},
+    visible: { transition: { staggerChildren: 0.06 } },
+  };
+  const cardVariant = {
+    hidden: { opacity: 0, y: 12 },
+    visible: { opacity: 1, y: 0 },
+  };
+
   return (
-    <Box sx={{ p: 4 }}>
-      <Typography variant="h4" sx={{ mb: 3, fontWeight: "bold" }}>
+    <div className="max-w-7xl mx-auto px-4 py-8">
+      <motion.h1
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-3xl sm:text-4xl font-extrabold mb-6 text-purple-900"
+      >
         Your Cart
-      </Typography>
+      </motion.h1>
 
       {loading ? (
-        <Typography>Loading cart…</Typography>
+        <div className="flex items-center justify-center py-20">
+          <div
+            className="w-12 h-12 rounded-full border-4 border-t-transparent animate-spin"
+            style={{ borderColor: "#8b5cf6" }}
+          />
+        </div>
       ) : !cart || !cart.items?.length ? (
-        <Typography color="text.secondary">Your cart is empty.</Typography>
+        <div className="text-center py-20 text-gray-500">
+          Your cart is empty.
+        </div>
       ) : (
-        <Grid container spacing={3}>
-          {/* LEFT: Cart Items */}
-          <Grid item xs={12} md={8}>
-            <Grid container spacing={2}>
-              {cart.items.map((item) => (
-                <Grid item xs={12} key={item.id}>
-                  <Card sx={{ borderRadius: 3, boxShadow: 3 }}>
-                    <CardContent>
-                      <Stack
-                        direction="row"
-                        alignItems="center"
-                        justifyContent="space-between"
-                        gap={2}
-                      >
-                        <Box>
-                          <Typography variant="h6">
-                            {item.event_name}
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            Price per participant: ₹
-                            {Number(item.event_price || 0).toFixed(2)}
-                          </Typography>
-                        </Box>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left: Items (span 8 on large) */}
+          <motion.div
+            variants={container}
+            initial="hidden"
+            animate="visible"
+            className="lg:col-span-8 space-y-4"
+          >
+            {cart.items.map((item) => (
+              <motion.div
+                key={item.id}
+                variants={cardVariant}
+                whileHover={{ scale: 1.01 }}
+                className="rounded-2xl border border-purple-200 shadow-sm bg-white overflow-hidden"
+              >
+                <div className="p-5">
+                  {/* Header row */}
+                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                    <div>
+                      <div className="text-lg font-semibold text-purple-900">
+                        {item.event_name}
+                      </div>
+                      <div className="text-sm text-gray-600 mt-1">
+                        Price per participant:{" "}
+                        <span className="font-medium text-gray-800">
+                          ₹{Number(item.event_price || 0).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
 
-                        <Stack direction="row" alignItems="center" gap={2}>
-                          <Typography variant="subtitle1" fontWeight={600}>
-                            Cost: ₹ {lineTotal(item).toFixed(2)}
-                          </Typography>
-                        </Stack>
-                      </Stack>
+                    <div className="flex items-center gap-4">
+                      <div className="text-sm text-gray-600 text-right">
+                        <div className="font-semibold">Cost</div>
+                        <div className="text-lg font-bold text-gray-900">
+                          ₹ {lineTotal(item).toFixed(2)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
 
-                      <Stack
-                        direction="row"
-                        alignItems="center"
-                        justifyContent="space-between"
-                        gap={2}
-                        sx={{ mt: 2 }}
-                      >
-                        <Stack direction="row" alignItems="center" gap={1}>
-                          <TextField
-                            label="Team Size"
-                            size="small"
-                            type="number"
-                            sx={{ width: 120 }}
-                            value={
-                              countDraft[item.id] ?? item.participants_count
-                            }
-                            onChange={(e) =>
-                              handleCountDraftChange(
-                                item.id,
-                                e.target.value.replace(/\D/g, "")
-                              )
-                            }
-                          />
-                          <Tooltip title="Save team size">
-                            <span>
-                              <IconButton
-                                color="primary"
-                                onClick={() => handleSaveCount(item)}
-                              >
-                                <SaveIcon />
-                              </IconButton>
-                            </span>
-                          </Tooltip>
-                        </Stack>
-
-                        <Tooltip title="Remove from cart">
-                          <IconButton
-                            color="error"
-                            onClick={() => handleDeleteItem(item.id)}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </Tooltip>
-                      </Stack>
-
-                      <Divider sx={{ my: 1.5 }} />
-
-                      {/* Participants list */}
-                      <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                        Participants
-                      </Typography>
-
-                      {item.temp_participants.map((p) => (
-                        <Grid
-                          container
-                          spacing={1}
-                          alignItems="center"
-                          key={p.id}
-                          sx={{ mb: 1 }}
+                  <div className="mt-4 border-t border-dashed border-purple-100 pt-4 space-y-4">
+                    {/* Team size editor */}
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <div className="text-sm text-gray-800 font-medium">
+                          Team Size
+                        </div>
+                        <input
+                          type="number"
+                          min="1"
+                          value={countDraft[item.id] ?? item.participants_count}
+                          onChange={(e) =>
+                            handleCountDraftChange(
+                              item.id,
+                              e.target.value.replace(/\D/g, "")
+                            )
+                          }
+                          className="w-28 px-3 py-2 rounded-lg border border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-200"
+                        />
+                        <button
+                          onClick={() => handleSaveCount(item)}
+                          className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-700 text-white font-semibold hover:bg-purple-800 transition-shadow shadow"
                         >
-                          <Grid item xs={12} md={3}>
-                            <TextField
-                              size="small"
-                              fullWidth
-                              label="Name"
-                              value={p.name}
-                              onChange={(e) =>
-                                (p.name = e.target.value) &&
-                                setCart({ ...cart })
-                              }
-                            />
-                          </Grid>
-                          <Grid item xs={12} md={3}>
-                            <TextField
-                              size="small"
-                              fullWidth
-                              label="Email"
-                              value={p.email || ""}
-                              onChange={(e) =>
-                                (p.email = e.target.value) &&
-                                setCart({ ...cart })
-                              }
-                            />
-                          </Grid>
-                          <Grid item xs={12} md={3}>
-                            <TextField
-                              size="small"
-                              fullWidth
-                              label="Phone"
-                              value={p.phone_number || ""}
-                              onChange={(e) =>
-                                (p.phone_number = e.target.value) &&
-                                setCart({ ...cart })
-                              }
-                            />
-                          </Grid>
-                          <Grid item xs={12} md={3}>
-                            <Stack direction="row" gap={1}>
-                              <Button
-                                size="small"
-                                variant="outlined"
-                                startIcon={<SaveIcon />}
-                                onClick={() => handleSaveParticipant(p)}
-                              >
-                                Save
-                              </Button>
-                              <Button
-                                size="small"
-                                color="error"
-                                startIcon={<RemoveCircleOutlineIcon />}
-                                onClick={() => handleRemoveParticipant(item, p)}
-                              >
-                                Remove
-                              </Button>
-                            </Stack>
-                          </Grid>
-                        </Grid>
-                      ))}
+                          <Save className="w-4 h-4" /> Save
+                        </button>
+                      </div>
 
-                      {/* Add participant (only when allowed by constraint) */}
-                      <Stack direction="row" gap={1} sx={{ mt: 1 }}>
-                        <Button
-                          size="small"
-                          variant="contained"
-                          startIcon={<AddIcon />}
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleDeleteItem(item.id)}
+                          className="px-3 py-2 rounded-lg bg-white border border-red-100 text-red-600 hover:bg-red-50 inline-flex items-center gap-2"
+                        >
+                          <Trash2 className="w-4 h-4" /> Remove
+                        </button>
+                        <button
                           onClick={() => handleAddOneParticipant(item)}
+                          className="px-3 py-2 rounded-lg bg-pink-700 text-white hover:bg-pink-800 inline-flex items-center gap-2"
                         >
-                          Add Participant
-                        </Button>
-                      </Stack>
+                          <Plus className="w-4 h-4" /> Add participant
+                        </button>
+                      </div>
+                    </div>
 
-                      <Divider sx={{ my: 1.5 }} />
+                    {/* Participants list */}
+                    <div>
+                      <div className="text-sm font-medium text-gray-800 mb-2">
+                        Participants
+                      </div>
+                      <div className="space-y-3">
+                        {item.temp_participants.map((p) => (
+                          <div
+                            key={p.id}
+                            className="grid grid-cols-1 md:grid-cols-12 gap-2 items-center"
+                          >
+                            <input
+                              className="md:col-span-3 px-3 py-2 rounded-lg border border-purple-100"
+                              placeholder="Name"
+                              value={p.name}
+                              onChange={(e) => {
+                                p.name = e.target.value;
+                                setCart({ ...cart });
+                              }}
+                            />
+                            <input
+                              className="md:col-span-3 px-3 py-2 rounded-lg border border-purple-100"
+                              placeholder="Email"
+                              value={p.email || ""}
+                              onChange={(e) => {
+                                p.email = e.target.value;
+                                setCart({ ...cart });
+                              }}
+                            />
+                            <input
+                              className="md:col-span-3 px-3 py-2 rounded-lg border border-purple-100"
+                              placeholder="Phone"
+                              value={p.phone_number || ""}
+                              onChange={(e) => {
+                                p.phone_number = e.target.value;
+                                setCart({ ...cart });
+                              }}
+                            />
+                            <div className="md:col-span-3 flex items-center gap-2">
+                              <button
+                                onClick={() => handleSaveParticipant(p)}
+                                className="px-3 py-2 rounded-lg bg-purple-700 text-white inline-flex items-center gap-2"
+                              >
+                                <Save className="w-4 h-4" /> Save
+                              </button>
+                              <button
+                                onClick={() => handleRemoveParticipant(item, p)}
+                                className="px-3 py-2 rounded-lg bg-white border border-red-100 text-red-600 inline-flex items-center gap-2"
+                              >
+                                <MinusCircle className="w-4 h-4" /> Remove
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
 
-                      {/* Slot */}
-                      <Stack direction="row" alignItems="center" gap={2}>
-                        <Typography variant="subtitle2">
-                          Selected Slot:
-                        </Typography>
+                    {/* Slot & Change */}
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                      <div>
+                        <div className="text-sm font-medium text-gray-800">
+                          Selected Slot
+                        </div>
                         {item.temp_timeslot ? (
-                          <Typography variant="body2">
+                          <div className="text-sm text-gray-800 mt-1">
                             Slot #{item.temp_timeslot.slot}
-                          </Typography>
+                          </div>
                         ) : (
-                          <Typography variant="body2" color="text.secondary">
-                            No slot selected.
-                          </Typography>
+                          <div className="text-sm text-gray-500 mt-1">
+                            No slot selected
+                          </div>
                         )}
+                      </div>
 
-                        <Button
-                          size="small"
-                          variant="outlined"
-                          startIcon={<ChangeCircleIcon />}
+                      <div className="flex items-center gap-3">
+                        <button
                           onClick={() => handleChangeSlot(item)}
+                          className="px-3 py-2 rounded-lg bg-white border border-purple-200 text-purple-800 inline-flex items-center gap-2"
                         >
-                          Change Slot
-                        </Button>
-                      </Stack>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
-          </Grid>
+                          <RefreshCw className="w-4 h-4" /> Change Slot
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </motion.div>
 
-          {/* RIGHT: Summary */}
-          <Grid item xs={12} md={4}>
-            <Paper
-              elevation={3}
-              sx={{ p: 2, borderRadius: 3, position: "sticky", top: 24 }}
-            >
-              <Typography variant="h6" sx={{ mb: 2, fontWeight: 700 }}>
-                Cart Summary
-              </Typography>
+          {/* Right: Summary (span 4 on large) */}
+          <div className="lg:col-span-4">
+            <div className="sticky top-6">
+              <div className="rounded-2xl p-5 border border-purple-200 bg-purple-50 shadow-sm">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <div className="text-lg font-semibold text-purple-900">
+                      Cart Summary
+                    </div>
+                    <div className="text-sm text-gray-700">
+                      Review & checkout
+                    </div>
+                  </div>
+                </div>
 
-              {cart.items.map((it) => (
-                <Box key={it.id} sx={{ mb: 1.5 }}>
-                  <Stack direction="row" justifyContent="space-between">
-                    <Typography variant="body1">
-                      {it.event_name} × {it.participants_count}
-                    </Typography>
-                    <Typography variant="body1" fontWeight={600}>
-                      ₹ {lineTotal(it).toFixed(2)}
-                    </Typography>
-                  </Stack>
-                  <Typography variant="caption" color="text.secondary">
-                    ₹{Number(it.event_price || 0).toFixed(2)} per participant
-                  </Typography>
-                  <Divider sx={{ mt: 1 }} />
-                </Box>
-              ))}
+                <div className="space-y-3 max-h-72 overflow-y-auto pr-2">
+                  {cart.items.map((it) => (
+                    <div
+                      key={it.id}
+                      className="flex items-start justify-between gap-2 py-2"
+                    >
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {it.event_name} × {it.participants_count}
+                        </div>
+                        <div className="text-xs text-gray-600">
+                          ₹{Number(it.event_price || 0).toFixed(2)} / p
+                        </div>
+                      </div>
+                      <div className="text-sm font-semibold text-gray-900">
+                        ₹ {lineTotal(it).toFixed(2)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
 
-              <Stack
-                direction="row"
-                justifyContent="space-between"
-                sx={{ mt: 2 }}
-              >
-                <Typography variant="subtitle1" fontWeight={700}>
-                  Total
-                </Typography>
-                <Typography variant="subtitle1" fontWeight={700}>
-                  ₹ {grandTotal.toFixed(2)}
-                </Typography>
-              </Stack>
+                <div className="mt-4 border-t border-dashed border-purple-100 pt-4">
+                  <div className="flex items-center justify-between">
+                    <div className="text-lg font-semibold">Total</div>
+                    <div className="text-2xl font-extrabold text-purple-900">
+                      ₹ {grandTotal.toFixed(2)}
+                    </div>
+                  </div>
 
-              <Button
-                fullWidth
-                variant="contained"
-                sx={{ mt: 2 }}
-                endIcon={<ArrowForwardIcon />}
-                onClick={() => navigate("/checkout")}
-              >
-                Proceed to Checkout
-              </Button>
-            </Paper>
-          </Grid>
-        </Grid>
+                  <button
+                    onClick={() => navigate("/checkout")}
+                    className="w-full mt-4 py-3 rounded-xl bg-purple-700 text-white font-semibold inline-flex items-center justify-center gap-2 hover:bg-purple-800 transition-shadow shadow"
+                  >
+                    Proceed to Checkout <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Small actions */}
+              <div className="mt-4 flex gap-3">
+                <button
+                  onClick={loadCart}
+                  className="flex-1 px-4 py-2 rounded-lg bg-white border border-purple-200 inline-flex items-center justify-center gap-2"
+                >
+                  <RefreshCw className="w-4 h-4" /> Refresh
+                </button>
+                <button
+                  onClick={() => {
+                    setCart(null);
+                    showToast("Cleared (demo)", "info");
+                  }}
+                  className="flex-1 px-4 py-2 rounded-lg bg-white border border-red-100 text-red-600 inline-flex items-center justify-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" /> Clear
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
-      {/* Add extra participants (delta) */}
+      {/* Add extra participants modal */}
       {addTargetItem && (
         <ParticipantDetailsModal
           open={addModalOpen}
@@ -571,13 +614,25 @@ export default function CartPage() {
         />
       )}
 
-      <Snackbar
-        open={alert.open}
-        autoHideDuration={3500}
-        onClose={() => setAlert({ ...alert, open: false })}
-      >
-        <Alert severity={alert.severity}>{alert.message}</Alert>
-      </Snackbar>
-    </Box>
+      {/* Toast */}
+      <AnimatePresence>
+        {toast.open && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className={`fixed right-6 bottom-6 z-50 rounded-xl px-5 py-3 shadow-xl text-white ${
+              toast.kind === "success"
+                ? "bg-green-500"
+                : toast.kind === "error"
+                ? "bg-red-500"
+                : "bg-indigo-500"
+            }`}
+          >
+            {toast.message}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

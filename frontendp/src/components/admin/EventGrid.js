@@ -1,178 +1,301 @@
 // src/components/admin/EventGrid.jsx
-import React, { useEffect, useState } from "react";
-import {
-  Grid,
-  Button,
-  Typography,
-  Box,
-  CircularProgress,
-  Snackbar,
-  Alert,
-  TextField,
-} from "@mui/material";
-import AddIcon from "@mui/icons-material/Add";
-import EventSlotsListModal from "./modals/EventSlotsModal";
-import EventSlotListModal from "./modals/EventSlotModal";
+import React, { useEffect, useMemo, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Plus } from "lucide-react";
+
+import { useAuth } from "../../context/useAuth";
+import { useNavigate } from "react-router-dom";
 
 import EventCard from "./EventCard";
-import EventDetailsModal from "./modals/EventDetailsModal";
 import EventService from "./EventService";
+
 import EventModal from "./modals/EventModal";
-import ParticipationConstraintModal from "./modals/ParticipationConstraintModal";
 import OrganiserModal from "./modals/OrganiserModal";
-import { useAuth } from "../../context/useAuth"; // <--- ADD THIS
+import ParticipationConstraintModal from "./modals/ParticipationConstraintModal";
+import EventDetailsModal from "./modals/EventDetailsModal";
+import EventSlotsListModal from "./modals/EventSlotsModal";
 
+/* ---------------- Animation Variants ---------------- */
+const containerVariants = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.06 } },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 10 },
+  show: { opacity: 1, y: 0 },
+};
+
+/* ======================================================
+   MAIN COMPONENT
+====================================================== */
 export default function EventGrid() {
-  const { user } = useAuth(); // <--- GET USER
-  const role = user?.role; // role = "admin" or "organiser"
+  const { user } = useAuth();
+  const navigate = useNavigate(); // ⭐ FIXED — NOW VALID
+  const role = user?.role;
 
+  /* ---------------- State ---------------- */
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState("name_asc");
 
+  // pagination
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 9;
+
+  // modals
   const [editEventData, setEditEventData] = useState(null);
+  const [openEventModal, setOpenEventModal] = useState(false);
 
   const [openOrgModal, setOpenOrgModal] = useState(false);
   const [eventIdForOrg, setEventIdForOrg] = useState(null);
   const [currentOrgIds, setCurrentOrgIds] = useState([]);
 
+  const [openConstraintModal, setOpenConstraintModal] = useState(false);
+  const [eventIdForConstraint, setEventIdForConstraint] = useState(null);
+  const [constraintIdToEdit, setConstraintIdToEdit] = useState(null);
+
   const [openDetailsModal, setOpenDetailsModal] = useState(false);
   const [eventIdForDetails, setEventIdForDetails] = useState(null);
   const [detailsIdToEdit, setDetailsIdToEdit] = useState(null);
 
-  const [openEventModal, setOpenEventModal] = useState(false);
-  const [constraintIdToEdit, setConstraintIdToEdit] = useState(null);
-
-  const [openConstraintModal, setOpenConstraintModal] = useState(false);
-  const [eventIdForConstraint, setEventIdForConstraint] = useState(null);
   const [slotsOpen, setSlotsOpen] = useState(false);
   const [slotsEventId, setSlotsEventId] = useState(null);
   const [slotsEventName, setSlotsEventName] = useState("");
 
-  const handleOpenSlots = (eventId, name) => {
-    setSlotsEventId(eventId);
-    setSlotsEventName(name || "");
-    setSlotsOpen(true);
-  };
-
+  // alerts
   const [alert, setAlert] = useState({
     open: false,
     message: "",
-    severity: "success",
+    tone: "success",
   });
+
+  /* ---------------- Load Events ---------------- */
+  useEffect(() => {
+    fetchEvents();
+  }, []);
 
   const fetchEvents = async () => {
     setLoading(true);
     try {
       const res = await EventService.getAllEvents();
-      setEvents(res.data);
-    } catch {
+      setEvents(res.data || []);
+    } catch (err) {
       setAlert({
         open: true,
-        message: "Failed to load events",
-        severity: "error",
+        message: "Failed to load events.",
+        tone: "error",
       });
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchEvents();
-  }, []);
+  /* ---------------- Search + Sort Logic ---------------- */
+  const filtered = useMemo(() => {
+    let list = [...events];
+    const q = search.toLowerCase();
 
-  const handleOpenConstraintModal = (id) => {
-    setEventIdForConstraint(id);
-    setOpenConstraintModal(true);
+    if (q) {
+      list = list.filter(
+        (e) =>
+          (e.name || "").toLowerCase().includes(q) ||
+          (e.parent_committee || "").toLowerCase().includes(q)
+      );
+    }
+
+    switch (sortBy) {
+      case "name_asc":
+        list.sort((a, b) => a.name.localeCompare(b.name));
+        break;
+      case "name_desc":
+        list.sort((a, b) => b.name.localeCompare(a.name));
+        break;
+      case "price_asc":
+        list.sort((a, b) => Number(a.price) - Number(b.price));
+        break;
+      case "price_desc":
+        list.sort((a, b) => Number(b.price) - Number(a.price));
+        break;
+      case "recent":
+        list.sort(
+          (a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)
+        );
+        break;
+      default:
+        break;
+    }
+
+    return list;
+  }, [events, search, sortBy]);
+
+  const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  /* ---------------- Modal Helper Functions ---------------- */
+  const openSlots = (id, name) => {
+    setSlotsEventId(id);
+    setSlotsEventName(name);
+    setSlotsOpen(true);
   };
 
-  const handleOpenEditConstraint = (constraintId, eventId) => {
+  const openOrg = (eventId, orgIds = []) => {
+    setEventIdForOrg(eventId);
+    setCurrentOrgIds(orgIds);
+    setOpenOrgModal(true);
+  };
+
+  const openConstraint = (eventId, constraintId = null) => {
     setEventIdForConstraint(eventId);
     setConstraintIdToEdit(constraintId);
     setOpenConstraintModal(true);
   };
 
-  const handleOpenEditEvent = (eventObj) => {
-    setEditEventData(eventObj);
-    setOpenEventModal(true);
-  };
-
-  const handleOpenAddDetails = (eventId) => {
-    setEventIdForDetails(eventId);
-    setDetailsIdToEdit(null);
-    setOpenDetailsModal(true);
-  };
-
-  const handleOpenEditDetails = (detailsId, eventId) => {
-    setEventIdForDetails(eventId);
+  const openDetails = (detailsId, eventId) => {
     setDetailsIdToEdit(detailsId);
+    setEventIdForDetails(eventId);
     setOpenDetailsModal(true);
   };
 
-  const handleAddOrganisers = (eventId, orgIds) => {
-    setEventIdForOrg(eventId);
-    setCurrentOrgIds(orgIds);
-    setOpenOrgModal(true);
-  };
-
-  const handleEditOrganisers = (eventId, orgIds) => {
-    setEventIdForOrg(eventId);
-    setCurrentOrgIds(orgIds);
-    setOpenOrgModal(true);
-  };
-
+  /* ======================================================
+      RENDER
+  ====================================================== */
   return (
-    <Box sx={{ p: 4 }}>
-      <Typography variant="h4" sx={{ mb: 3, fontWeight: "bold" }}>
-        🎉 College Events
-      </Typography>
+    <div className="p-6 max-w-7xl mx-auto">
+      {/* ---------- Header ---------- */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 gap-4">
+        <div>
+          <h1 className="text-3xl font-extrabold text-gray-900">
+            🎉 College Events
+          </h1>
+          <p className="text-gray-500 text-sm">
+            Manage events — slots, organisers, attendance, constraints &
+            details.
+          </p>
+        </div>
 
-      {role === "admin" && (
-        <Button
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setOpenEventModal(true)}
-          sx={{ mb: 3 }}
-        >
-          Add Event
-        </Button>
-      )}
+        {role === "admin" && (
+          <button
+            onClick={() => {
+              setEditEventData(null);
+              setOpenEventModal(true);
+            }}
+            className="flex items-center gap-2 px-4 py-2 rounded-md bg-gradient-to-r from-purple-600 to-pink-500 text-white shadow-lg hover:scale-105 transition"
+          >
+            <Plus className="w-4 h-4" />
+            Add Event
+          </button>
+        )}
+      </div>
 
-      <TextField
-        placeholder="Search events..."
-        fullWidth
-        sx={{ mb: 3 }}
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
+      {/* ---------- Filters ---------- */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 mb-6">
+        <div className="lg:col-span-2 flex gap-3">
+          <input
+            type="search"
+            placeholder="Search events or committee…"
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            className="flex-1 px-3 py-2 rounded-md border border-gray-200 focus:ring-2 focus:ring-purple-300"
+          />
 
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="px-3 py-2 rounded-md border border-gray-200 bg-white focus:ring-2 focus:ring-purple-300"
+          >
+            <option value="name_asc">Name ↑</option>
+            <option value="name_desc">Name ↓</option>
+            <option value="price_asc">Price ↑</option>
+            <option value="price_desc">Price ↓</option>
+            <option value="recent">Most Recent</option>
+          </select>
+        </div>
+
+        <div className="text-right">
+          <p className="text-gray-500 text-sm">Total Events</p>
+          <p className="text-lg font-semibold">{events.length}</p>
+        </div>
+      </div>
+
+      {/* ---------- Grid ---------- */}
       {loading ? (
-        <CircularProgress />
+        <div className="flex justify-center py-10">
+          <div className="w-10 h-10 border-4 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="text-center py-20">
+          <h2 className="text-lg font-bold text-gray-700">No events found</h2>
+          <p className="text-gray-500 mt-1">Try adjusting your filters.</p>
+        </div>
       ) : (
-        <Grid container spacing={3}>
-          {events
-            .filter((e) => e.name.toLowerCase().includes(search.toLowerCase()))
-            .map((event) => (
-              <Grid item xs={12} sm={6} md={4} key={event.id}>
+        <>
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="show"
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+          >
+            {pageItems.map((ev) => (
+              <motion.div key={ev.id} variants={itemVariants}>
                 <EventCard
-                  event={event}
+                  event={ev}
                   role={role}
-                  onAddConstraints={handleOpenConstraintModal}
-                  onEditConstraints={handleOpenEditConstraint}
-                  onAddDetails={handleOpenAddDetails}
-                  onEditDetails={handleOpenEditDetails}
-                  onAddOrganisers={handleAddOrganisers}
-                  onEditOrganisers={handleEditOrganisers}
-                  onOpenSlots={handleOpenSlots} // <--- PASS DOWN
+                  onAddConstraints={(id) => openConstraint(id)}
+                  onEditConstraints={(cId, eId) => openConstraint(eId, cId)}
+                  onAddDetails={(id) => openDetails(null, id)}
+                  onEditDetails={(dId, eId) => openDetails(dId, eId)}
+                  onAddOrganisers={(id) => openOrg(id)}
+                  onEditOrganisers={(id, org) => openOrg(id, org)}
+                  onOpenSlots={(id, name) => openSlots(id, name)}
+                  /* ⭐ Check-In / Attendance Page ⭐ */
+                  onOpenAttendance={(id) => navigate(`/admin/checkin/${id}`)}
                   onDelete={fetchEvents}
-                  onEditEvent={handleOpenEditEvent}
+                  onEditEvent={(obj) => {
+                    setEditEventData(obj);
+                    setOpenEventModal(true);
+                  }}
                 />
-              </Grid>
+              </motion.div>
             ))}
-        </Grid>
+          </motion.div>
+
+          {/* ---------- Pagination ---------- */}
+          <div className="flex justify-between items-center mt-6">
+            <div className="text-gray-600 text-sm">
+              Showing {(page - 1) * PAGE_SIZE + 1}–
+              {Math.min(page * PAGE_SIZE, filtered.length)} of {filtered.length}
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                disabled={page <= 1}
+                onClick={() => setPage(page - 1)}
+                className="px-3 py-1 border rounded disabled:opacity-40"
+              >
+                Prev
+              </button>
+              <span>
+                Page {page} / {pages}
+              </span>
+              <button
+                disabled={page >= pages}
+                onClick={() => setPage(page + 1)}
+                className="px-3 py-1 border rounded disabled:opacity-40"
+              >
+                Next
+              </button>
+            </div>
+          </div>
+        </>
       )}
 
+      {/* ---------- Modals ---------- */}
       <EventModal
         open={openEventModal}
         onClose={() => {
@@ -209,6 +332,7 @@ export default function EventGrid() {
         detailsId={detailsIdToEdit}
         refreshEvents={fetchEvents}
       />
+
       <EventSlotsListModal
         open={slotsOpen}
         onClose={() => setSlotsOpen(false)}
@@ -216,13 +340,26 @@ export default function EventGrid() {
         eventName={slotsEventName}
       />
 
-      <Snackbar
-        open={alert.open}
-        autoHideDuration={4000}
-        onClose={() => setAlert({ ...alert, open: false })}
-      >
-        <Alert severity={alert.severity}>{alert.message}</Alert>
-      </Snackbar>
-    </Box>
+      {/* ---------- Toast ---------- */}
+      {alert.open && (
+        <div
+          className={`fixed bottom-6 right-6 px-4 py-3 rounded-lg shadow-lg ${
+            alert.tone === "error"
+              ? "bg-red-50 text-red-700"
+              : "bg-white text-gray-800"
+          }`}
+        >
+          {alert.message}
+          <button
+            className="ml-3 text-xs underline"
+            onClick={() =>
+              setAlert({ open: false, message: "", tone: "success" })
+            }
+          >
+            Close
+          </button>
+        </div>
+      )}
+    </div>
   );
 }

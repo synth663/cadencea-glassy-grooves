@@ -8,6 +8,10 @@ import {
 
 import { AuthProvider } from "./context/useAuth";
 import PrivateRoute from "./components/private_route";
+import ProfilePage from "./components/home/ProfilePage";
+import AdminBookingsPage from "./components/admin/AdminBookingsPage";
+
+import AdminCheckInPage from "./components/admin/AdminCheckInPage";
 
 // Import the NavBar layout component
 import NavBar from "./components/NavBar";
@@ -29,6 +33,8 @@ import ParticipantEventGrid from "./components/participant/ParticipantEventGrid"
 import CartPage from "./components/participant/CartPage";
 import CheckoutPage from "./components/participant/CheckoutPage";
 
+import ParentEventsPage from "./components/participant/ParentEventsPage";
+import ParentEventEventsPage from "./components/participant/ParentEventEventsPage";
 import BookingSuccessPage from "./components/participant/BookingSuccessPage";
 
 function App() {
@@ -48,6 +54,52 @@ function App() {
                 allowedRoles={["admin", "participant", "organiser"]}
               >
                 <NavBar content={<Home />} />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/profile"
+            element={
+              <PrivateRoute
+                allowedRoles={["admin", "participant", "organiser"]}
+              >
+                <NavBar content={<ProfilePage />} />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/admin/bookings"
+            element={
+              <PrivateRoute allowedRoles={["admin", "organiser"]}>
+                <NavBar content={<AdminBookingsPage />} />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/admin/checkin/:eventId"
+            element={
+              <PrivateRoute allowedRoles={["admin", "organiser"]}>
+                <NavBar content={<AdminCheckInPage />} />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/parent-events"
+            element={
+              <PrivateRoute allowedRoles={["participant", "organiser"]}>
+                <NavBar content={<ParentEventsPage />} />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/parent/:parentId"
+            element={
+              <PrivateRoute allowedRoles={["participant", "organiser"]}>
+                <NavBar content={<ParentEventEventsPage />} />
               </PrivateRoute>
             }
           />

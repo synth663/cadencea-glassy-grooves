@@ -9,44 +9,71 @@ from rest_framework.response import Response
 
 from .models import *
 from .serializers import *
-
-
 class EventViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = EventSerializer
+
+    # IMPORTANT — restore base queryset so router works
     queryset = Event.objects.all()
+
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['parent_event']
+
+    # ⭐ ALWAYS annotate and prefetch required relations
+    def get_base_queryset(self):
+        return (
+            Event.objects
+            .select_related(
+                "constraint",
+                "details",
+                "parent_event",
+                "category",
+            )
+            .prefetch_related("slots", "organisers")
+        )
 
     def get_queryset(self):
         user = self.request.user
+        qs = self.get_base_queryset()
 
         if user.role == 'admin':
-            return Event.objects.all()
+            return qs
 
         if user.role == 'organiser':
-            return Event.objects.filter(organisers__user=user)
+            return qs.filter(organisers__user=user)
+
+        if user.role == 'participant':
+            return qs
 
         return Event.objects.none()
-    
 
+
+    # ---------------------------
+    # /events/browse/
+    # ---------------------------
     @action(detail=False, methods=['get'], url_path='browse', permission_classes=[IsAuthenticated])
     def browse(self, request):
         user = request.user
-        qs = Event.objects.all()
+        qs = self.get_base_queryset()
 
-        # organisers can participate in other events, not their own
+        # organisers cannot participate in their own events
         if user.role == 'organiser':
             qs = qs.exclude(organisers__user=user)
 
-        # show only events that are ready for participation
+        # optional parent filter
+        parent_event = request.query_params.get("parent_event")
+        if parent_event:
+            qs = qs.filter(parent_event=parent_event)
+
+        # only fully configured events
         qs = qs.filter(
             constraint__isnull=False,
             details__isnull=False,
-            slots__isnull=False
+            slots__isnull=False,
         ).distinct()
 
         serializer = self.get_serializer(qs, many=True)
         return Response(serializer.data)
-
 
     def update(self, request, *args, **kwargs):
         kwargs['partial'] = True
@@ -148,19 +175,29 @@ class ParticipationConstraintViewSet(viewsets.ModelViewSet):
 
 
 
-
 class EventDetailsViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = EventDetailsSerializer
-    queryset = EventDetails.objects.all()  # <--- ADD THIS
+    queryset = EventDetails.objects.all()
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ['event']
 
     def get_queryset(self):
         user = self.request.user
+
+        # READ operations
+        if self.request.method in SAFE_METHODS:  # GET, HEAD, OPTIONS
+            return EventDetails.objects.all()
+
+        # WRITE operations
         if user.role == 'admin':
             return EventDetails.objects.all()
+
         if user.role == 'organiser':
             return EventDetails.objects.filter(event__organisers__user=user)
+
         return EventDetails.objects.none()
+
 
 
 
@@ -427,14 +464,16 @@ class BookingViewSet(viewsets.ModelViewSet):
         ser = BookingSerializer(booking)
         return Response(ser.data, status=status.HTTP_201_CREATED)
 
-
-
 class BookedParticipantViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     queryset = BookedParticipant.objects.all()
-    serializer_class = BookedParticipantSerializer
 
-    # only admins + organisers of that event can edit/check-in
+    def get_serializer_class(self):
+        if self.action == "checkin":
+            return BookedParticipantCheckinSerializer
+        return BookedParticipantSerializer
+
+    # permission check
     def has_permission_on_obj(self, request, participant):
         user = request.user
         if user.role == "admin":
@@ -443,17 +482,27 @@ class BookedParticipantViewSet(viewsets.ModelViewSet):
             return participant.booked_event.event.organisers.filter(user=user).exists()
         return False
 
+    # SINGLE VALID CHECKIN ENDPOINT (no duplicates)
     @action(detail=True, methods=["post"], url_path="checkin")
     def checkin(self, request, pk=None):
         participant = self.get_object()
+
         if not self.has_permission_on_obj(request, participant):
             return Response({"detail": "Not allowed"}, status=403)
 
+        serializer = BookedParticipantCheckinSerializer(
+            participant,
+            data={"arrived": True},
+            partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+
         participant.arrived = True
         participant.checkin_time = timezone.now()
-        participant.save(update_fields=["arrived","checkin_time"])
+        participant.save(update_fields=["arrived", "checkin_time"])
 
-        return Response({"detail": "Checked-in"})
+        return Response({"detail": "Checked-in"}, status=200)
+
 
 
 

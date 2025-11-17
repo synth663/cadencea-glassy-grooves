@@ -1,12 +1,19 @@
-// src/components/admin/EventService.js
 import { appApiClient as AxiosInstance } from "../../api/endpoints";
 
 const EventService = {
   // Events
   getAllEvents: () => AxiosInstance.get("/events/"),
   getEventById: (id) => AxiosInstance.get(`/events/${id}/`),
-  createEvent: (data) => AxiosInstance.post("/events/", data),
-  updateEvent: (id, data) => AxiosInstance.put(`/events/${id}/`, data),
+  createEvent: (data) =>
+    AxiosInstance.post("/events/", data, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
+
+  updateEvent: (id, data) =>
+    AxiosInstance.put(`/events/${id}/`, data, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }),
+
   deleteEvent: (id) => AxiosInstance.delete(`/events/${id}/`),
 
   // Constraints
@@ -31,6 +38,13 @@ const EventService = {
   // Categories / Parent Events (for EventModal)
   getCategories: () => AxiosInstance.get("/categories/"),
   getParentEvents: () => AxiosInstance.get("/parent-events/"),
+
+  // Booked events (admin/organiser)
+  getAllBookedEventsAdmin: () => AxiosInstance.get("/booked-events/"),
+
+  // check-in a booked participant (calls the action on BookedParticipantViewSet)
+  checkInParticipant: (participantId) =>
+    AxiosInstance.post(`/booked-participants/${participantId}/checkin/`),
 
   // ----- Event Slots -----
   // list slots for an event via query param (server filters)
