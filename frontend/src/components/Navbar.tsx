@@ -1,20 +1,24 @@
-import { useState, useEffect } from "react";
-import { Search, Library, User, Heart, ListMusic, History, ChevronLeft, ChevronRight } from "lucide-react";
+import { useState, useEffect, forwardRef } from "react";
+import { Search, History as HistoryIcon, User, ChevronLeft, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { AuthDialog } from "@/components/AuthDialog";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const MAX_HISTORY = 10;
 let navigationHistory: string[] = [];
 let currentHistoryIndex = -1;
 
-export const Navbar = () => {
+interface NavbarProps {
+  searchInputRef?: React.RefObject<HTMLInputElement>;
+}
+
+export const Navbar = forwardRef<HTMLInputElement, NavbarProps>(({ searchInputRef }, ref) => {
   const [authDialogOpen, setAuthDialogOpen] = useState(false);
   const [canGoBack, setCanGoBack] = useState(false);
   const [canGoForward, setCanGoForward] = useState(false);
@@ -104,6 +108,7 @@ export const Navbar = () => {
             <div className="relative w-full">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
+                ref={searchInputRef || ref}
                 type="search"
                 placeholder="Search songs, artists, or playlists..."
                 className="w-full pl-12 rounded-full glass-effect border-border/50 focus:border-primary transition-colors"
@@ -113,36 +118,24 @@ export const Navbar = () => {
 
           {/* Icons */}
           <div className="flex items-center gap-4">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="p-2 rounded-full hover:bg-secondary/50 transition-colors">
-                  <Library className="h-5 w-5" />
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="glass-effect border-border/50 bg-card/95 backdrop-blur-xl">
-                <DropdownMenuItem 
-                  className="cursor-pointer hover:bg-secondary/50 transition-colors"
-                  onClick={() => navigate("/saved-songs")}
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button 
+                    className="p-2 rounded-full hover:bg-secondary/50 transition-colors"
+                    onClick={() => navigate("/history")}
+                  >
+                    <HistoryIcon className="h-5 w-5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent 
+                  className="glass-effect backdrop-blur-xl bg-background/80 border-border/50 rounded-xl px-4 py-2 shadow-[0_0_20px_rgba(168,85,247,0.15)]"
+                  sideOffset={8}
                 >
-                  <Heart className="mr-2 h-4 w-4" />
-                  <span>Saved Songs</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  className="cursor-pointer hover:bg-secondary/50 transition-colors"
-                  onClick={() => navigate("/playlists")}
-                >
-                  <ListMusic className="mr-2 h-4 w-4" />
-                  <span>Playlists</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem 
-                  className="cursor-pointer hover:bg-secondary/50 transition-colors"
-                  onClick={() => navigate("/history")}
-                >
-                  <History className="mr-2 h-4 w-4" />
-                  <span>History</span>
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  <p className="font-['Poppins'] text-sm">History</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
             <button 
               className="p-2 rounded-full hover:bg-secondary/50 transition-colors"
               onClick={() => setAuthDialogOpen(true)}
@@ -157,6 +150,7 @@ export const Navbar = () => {
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
+              ref={searchInputRef || ref}
               type="search"
               placeholder="Search..."
               className="w-full pl-12 rounded-full glass-effect border-border/50"
@@ -167,4 +161,4 @@ export const Navbar = () => {
     </nav>
     </>
   );
-};
+});

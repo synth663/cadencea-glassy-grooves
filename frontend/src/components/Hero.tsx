@@ -1,7 +1,17 @@
 import { Button } from "@/components/ui/button";
 import heroBackground from "@/assets/hero-background.jpg";
 
-export const Hero = () => {
+interface HeroProps {
+  onGetStarted?: () => void;
+}
+
+export const Hero = ({ onGetStarted }: HeroProps) => {
+  const handleGetStarted = () => {
+    if (onGetStarted) {
+      onGetStarted();
+    }
+  };
+
   return (
     <section className="relative h-screen flex items-center justify-center overflow-hidden">
       {/* Background Image with Overlay */}
@@ -22,10 +32,14 @@ export const Hero = () => {
         </p>
         
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button variant="hero" size="lg" className="text-base">
-                GET STARTED
+          <Button 
+            variant="hero" 
+            size="lg" 
+            className="text-base"
+            onClick={handleGetStarted}
+          >
+            GET STARTED
           </Button>
-          
         </div>
       </div>
 
