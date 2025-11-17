@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AlbumDisplay } from "@/components/nowplaying/AlbumDisplay";
 import { LyricsPanel } from "@/components/nowplaying/LyricsPanel";
@@ -12,9 +12,10 @@ export default function NowPlaying() {
   const [bgGradient, setBgGradient] = useState("linear-gradient(135deg, hsl(280 80% 20%), hsl(320 85% 25%), hsl(0 0% 5%))");
   const [accentColor, setAccentColor] = useState("hsl(280 80% 60%)");
   const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(240); // 4 minutes default
-  const [isPlaying, setIsPlaying] = useState(true);
+  const [duration, setDuration] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(75);
+  const audioRef = useRef<HTMLAudioElement>(null);
 
   // Mock data - replace with actual data from your backend/state
   const currentSong = {
@@ -24,7 +25,7 @@ export default function NowPlaying() {
     album: "A Night at the Opera",
     year: "1975",
     coverUrl: null, // Will use placeholder
-    duration: 354,
+    audioUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3", // Demo audio file
   };
 
   const queueItems = [
@@ -42,20 +43,71 @@ export default function NowPlaying() {
     { time: 15, text: "Look up to the skies and see", active: false },
   ];
 
-  // Simulate playback progress
+  // Initialize audio element
   useEffect(() => {
-    if (!isPlaying) return;
-    const interval = setInterval(() => {
-      setCurrentTime((prev) => (prev < duration ? prev + 1 : prev));
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [isPlaying, duration]);
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const handleTimeUpdate = () => {
+      setCurrentTime(audio.currentTime);
+    };
+
+    const handleLoadedMetadata = () => {
+      setDuration(audio.duration);
+    };
+
+    const handleEnded = () => {
+      setIsPlaying(false);
+    };
+
+    audio.addEventListener("timeupdate", handleTimeUpdate);
+    audio.addEventListener("loadedmetadata", handleLoadedMetadata);
+    audio.addEventListener("ended", handleEnded);
+
+    // Set initial volume
+    audio.volume = volume / 100;
+
+    return () => {
+      audio.removeEventListener("timeupdate", handleTimeUpdate);
+      audio.removeEventListener("loadedmetadata", handleLoadedMetadata);
+      audio.removeEventListener("ended", handleEnded);
+    };
+  }, []);
+
+  // Handle play/pause
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (isPlaying) {
+      audio.play();
+    } else {
+      audio.pause();
+    }
+  }, [isPlaying]);
+
+  // Handle volume changes
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.volume = volume / 100;
+  }, [volume]);
+
+  const handleSeek = (time: number) => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    audio.currentTime = time;
+    setCurrentTime(time);
+  };
 
   return (
     <div 
       className="min-h-screen relative overflow-hidden"
       style={{ background: bgGradient }}
     >
+      {/* Hidden audio element */}
+      <audio ref={audioRef} src={currentSong.audioUrl} preload="metadata" />
+      
       {/* Vignette overlay */}
       <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background/60 pointer-events-none" />
       
@@ -99,7 +151,7 @@ export default function NowPlaying() {
           volume={volume}
           accentColor={accentColor}
           onPlayPause={() => setIsPlaying(!isPlaying)}
-          onSeek={setCurrentTime}
+          onSeek={handleSeek}
           onVolumeChange={setVolume}
         />
       </div>
