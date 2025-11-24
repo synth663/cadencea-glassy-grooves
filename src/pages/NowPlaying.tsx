@@ -6,6 +6,8 @@ import { QueuePanel } from "@/components/nowplaying/QueuePanel";
 import { PlayerControls } from "@/components/nowplaying/PlayerControls";
 import { MicIndicator } from "@/components/nowplaying/MicIndicator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { parseLRC, type LyricLine } from "@/utils/lrcParser";
+import bohemianRhapsodyLRC from "@/assets/lyrics/bohemian-rhapsody.lrc?raw";
 
 export default function NowPlaying() {
   const [searchParams] = useSearchParams();
@@ -15,6 +17,7 @@ export default function NowPlaying() {
   const [duration, setDuration] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [volume, setVolume] = useState(75);
+  const [lyrics, setLyrics] = useState<LyricLine[]>([]);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   // Mock data - replace with actual data from your backend/state
@@ -34,14 +37,27 @@ export default function NowPlaying() {
     { id: "4", title: "Livin' on a Prayer", artist: "Bon Jovi", duration: 249 },
   ];
 
-  const lyrics = [
-    { time: 0, text: "Is this the real life?", active: false },
-    { time: 3, text: "Is this just fantasy?", active: false },
-    { time: 6, text: "Caught in a landslide", active: true },
-    { time: 9, text: "No escape from reality", active: false },
-    { time: 12, text: "Open your eyes", active: false },
-    { time: 15, text: "Look up to the skies and see", active: false },
-  ];
+  // Load LRC lyrics for Bohemian Rhapsody
+  useEffect(() => {
+    if (currentSong.id === "1") {
+      const parsedLyrics = parseLRC(bohemianRhapsodyLRC);
+      setLyrics(parsedLyrics);
+    }
+  }, [currentSong.id]);
+
+  // Update active lyric based on current time
+  useEffect(() => {
+    if (lyrics.length === 0) return;
+
+    const updatedLyrics = lyrics.map((lyric, index) => {
+      const nextLyric = lyrics[index + 1];
+      const isActive = currentTime >= lyric.time && 
+        (!nextLyric || currentTime < nextLyric.time);
+      return { ...lyric, active: isActive };
+    });
+
+    setLyrics(updatedLyrics);
+  }, [currentTime]);
 
   // Initialize audio element
   useEffect(() => {
