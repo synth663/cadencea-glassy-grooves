@@ -1,5 +1,6 @@
 import { Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
 const songs = [
   { id: 1, title: "Bohemian Rhapsody", artist: "Queen", plays: "2.4M", duration: "5:55" },
@@ -11,6 +12,8 @@ const songs = [
 ];
 
 export const RecommendedSongs = () => {
+  const navigate = useNavigate();
+  
   return (
     <section className="py-16 px-6 bg-secondary/20">
       <div className="container mx-auto max-w-5xl">
@@ -30,6 +33,7 @@ export const RecommendedSongs = () => {
                 <Button
                   variant="ghost"
                   size="icon"
+                  onClick={() => navigate(`/now-playing?id=${song.id}`)}
                   className="rounded-full bg-primary/20 group-hover:bg-primary group-hover:scale-110 transition-all duration-300"
                 >
                   <Play className="h-4 w-4 fill-current" />

@@ -1,8 +1,11 @@
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { Play, Download, Share2, History as HistoryIcon } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const History = () => {
+  const navigate = useNavigate();
+  
   const tracks = [
     {
       id: 1,
@@ -81,7 +84,10 @@ const History = () => {
                   <td className="p-4 text-muted-foreground">{track.duration}</td>
                   <td className="p-4">
                     <div className="flex items-center justify-center gap-3">
-                      <button className="p-2 rounded-full hover:bg-primary/20 transition-colors group-hover:glow-effect">
+                      <button 
+                        onClick={() => navigate(`/now-playing?id=${track.id}`)}
+                        className="p-2 rounded-full hover:bg-primary/20 transition-colors group-hover:glow-effect"
+                      >
                         <Play className="h-4 w-4 text-primary fill-current" />
                       </button>
                       <button className="p-2 rounded-full hover:bg-accent/20 transition-colors">
