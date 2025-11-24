@@ -1,10 +1,15 @@
 import { useState, useEffect } from "react";
-import { Mic, MicOff } from "lucide-react";
+import { Mic, MicOff, ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 type MicState = "idle" | "recording" | "denied";
 
-export function MicIndicator() {
+interface MicIndicatorProps {
+  onBack: () => void;
+}
+
+export function MicIndicator({ onBack }: MicIndicatorProps) {
   const [micState, setMicState] = useState<MicState>("idle");
 
   useEffect(() => {
@@ -15,7 +20,18 @@ export function MicIndicator() {
   }, []);
 
   return (
-    <div className="absolute top-6 left-6 flex items-center gap-2">
+    <div className="absolute top-6 left-6 flex items-center gap-3">
+      {/* Back Button */}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={onBack}
+        className="glass-effect rounded-full hover:bg-primary/20 transition-all w-10 h-10"
+      >
+        <ArrowLeft className="w-5 h-5" />
+      </Button>
+
+      {/* Mic Indicator */}
       <div className="relative">
         <div 
           className={cn(
