@@ -161,17 +161,19 @@ class ParticipationConstraintViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
 
+        # everyone logged in can READ constraints
+        if self.request.method in ('GET', 'HEAD', 'OPTIONS'):
+            return ParticipationConstraint.objects.all()
+
+        # write access rules
         if user.role == 'admin':
             return ParticipationConstraint.objects.all()
 
         if user.role == 'organiser':
             return ParticipationConstraint.objects.filter(event__organisers__user=user)
 
-        # allow participants to view constraints (read-only)
-        if user.role == 'participant':
-            return ParticipationConstraint.objects.all()
-
         return ParticipationConstraint.objects.none()
+
 
 
 
@@ -518,14 +520,21 @@ class BookedEventViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        # participants see only their own booked events
-        qs = BookedEvent.objects.filter(booking__user=user)
 
-        # if you want admins/organisers to also view:
+        # Admin sees ALL
         if user.role == "admin":
             return BookedEvent.objects.all()
-        if user.role == "organiser":
-            return BookedEvent.objects.filter(event__organisers__user=user)
 
-        return qs
+        # Organiser sees:
+        # 1) events they organised
+        # 2) AND bookings they personally made
+        if user.role == "organiser":
+            return BookedEvent.objects.filter(
+                models.Q(event__organisers__user=user) |
+                models.Q(booking__user=user)
+            ).distinct()
+
+        # Participant sees ONLY their bookings
+        return BookedEvent.objects.filter(booking__user=user)
+
 

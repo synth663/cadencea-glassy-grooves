@@ -1,55 +1,58 @@
 import { appApiClient as AxiosInstance } from "../../api/endpoints";
 
 const EventService = {
-  // Events
+  // ---------- EVENTS ----------
   getAllEvents: () => AxiosInstance.get("/events/"),
   getEventById: (id) => AxiosInstance.get(`/events/${id}/`),
+
+  // Only use multipart when uploading image
   createEvent: (data) =>
     AxiosInstance.post("/events/", data, {
       headers: { "Content-Type": "multipart/form-data" },
     }),
 
-  updateEvent: (id, data) =>
+  updateEventMultipart: (id, data) =>
     AxiosInstance.put(`/events/${id}/`, data, {
       headers: { "Content-Type": "multipart/form-data" },
     }),
 
+  // JSON update for organisers, constraints, parent_event, etc.
+  updateEventJson: (id, data) => AxiosInstance.put(`/events/${id}/`, data),
+
   deleteEvent: (id) => AxiosInstance.delete(`/events/${id}/`),
 
-  // Constraints
+  // ---------- ORGANISERS ----------
+  getOrganisers: () => AxiosInstance.get("/organisers/"),
+
+  // ---------- CONSTRAINTS ----------
   getConstraints: () => AxiosInstance.get("/constraints/"),
   getConstraintById: (id) => AxiosInstance.get(`/constraints/${id}/`),
   createConstraint: (data) => AxiosInstance.post("/constraints/", data),
   updateConstraint: (id, data) =>
     AxiosInstance.put(`/constraints/${id}/`, data),
 
-  // Details
+  // ---------- DETAILS ----------
   getEventDetails: () => AxiosInstance.get("/event-details/"),
   getEventDetailById: (id) => AxiosInstance.get(`/event-details/${id}/`),
   createEventDetails: (data) => AxiosInstance.post("/event-details/", data),
   updateEventDetails: (id, data) =>
     AxiosInstance.put(`/event-details/${id}/`, data),
 
-  // Organisers
-  getOrganisers: () => AxiosInstance.get("/organisers/"),
-  addOrganiser: (data) => AxiosInstance.post("/organisers/", data),
-  deleteOrganiser: (id) => AxiosInstance.delete(`/organisers/${id}/`),
-
-  // Categories / Parent Events (for EventModal)
+  // ---------- CATEGORIES ----------
   getCategories: () => AxiosInstance.get("/categories/"),
   getParentEvents: () => AxiosInstance.get("/parent-events/"),
 
-  // Booked events (admin/organiser)
+  // ---------- BOOKED EVENTS ----------
   getAllBookedEventsAdmin: () => AxiosInstance.get("/booked-events/"),
 
-  // check-in a booked participant (calls the action on BookedParticipantViewSet)
+  // ---------- CHECK-IN ----------
   checkInParticipant: (participantId) =>
     AxiosInstance.post(`/booked-participants/${participantId}/checkin/`),
 
-  // ----- Event Slots -----
-  // list slots for an event via query param (server filters)
+  // ---------- SLOTS ----------
   getEventSlots: (eventId) =>
     AxiosInstance.get(`/event-slots/?event_id=${eventId}`),
+
   getEventSlotById: (id) => AxiosInstance.get(`/event-slots/${id}/`),
   createEventSlot: (data) => AxiosInstance.post("/event-slots/", data),
   updateEventSlot: (id, data) => AxiosInstance.put(`/event-slots/${id}/`, data),

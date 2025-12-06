@@ -11,7 +11,7 @@ import ParticipantCountModal from "./modals/ParticipantCountModal";
 import ParticipantDetailsModal from "./modals/ParticipantDetailsModal";
 import SlotPickModal from "./modals/SlotPickModal";
 
-// **NEW separated modal**
+// View Details Modal
 import EventFullDetailsModal from "./EventFullDetailsModal";
 
 export default function ParentEventEventsPage() {
@@ -23,31 +23,37 @@ export default function ParentEventEventsPage() {
   const [parentName, setParentName] = useState("");
   const [fetching, setFetching] = useState(true);
 
-  // ---- add to cart flow state ----
-  const [activeEvent, setActiveEvent] = useState(null);
-  const [constraint, setConstraint] = useState(null);
-  const [participantsCount, setParticipantsCount] = useState(1);
-  const [participantsData, setParticipantsData] = useState([]);
-  const [pickedSlot, setPickedSlot] = useState(null);
+  // ---------- NEW BOOKING SESSION (key fix) ----------
+  const initialSession = {
+    event: null,
+    constraint: null,
+    count: 1,
+    participants: [],
+    slot: null,
+  };
 
+  const [session, setSession] = useState(initialSession);
+
+  // Modals
   const [openCount, setOpenCount] = useState(false);
   const [openDetails, setOpenDetails] = useState(false);
   const [openSlot, setOpenSlot] = useState(false);
 
+  const [viewEvent, setViewEvent] = useState(null);
+
+  // Toast
   const [alert, setAlert] = useState({
     open: false,
     message: "",
     severity: "success",
   });
 
-  // ---- NEW view modal state ----
-  const [viewEvent, setViewEvent] = useState(null);
-
   const showToast = (msg, sev = "success") => {
     setAlert({ open: true, message: msg, severity: sev });
     setTimeout(() => setAlert((a) => ({ ...a, open: false })), 2600);
   };
 
+  // ---------- Load Events ----------
   useEffect(() => {
     const load = async () => {
       setFetching(true);
@@ -75,33 +81,51 @@ export default function ParentEventEventsPage() {
     return true;
   };
 
-  // -------------------- ADD TO CART ---------------------
-  const startAddToCart = async (event) => {
+  // -----------------------------------------------------------
+  // START ADD TO CART SESSION
+  // -----------------------------------------------------------
+  const startAddToCart = async (ev) => {
     if (!requireLogin()) return;
-    setActiveEvent(event);
-    setParticipantsData([]);
-    setPickedSlot(null);
 
-    let c = null;
-    if (event.constraint_id) {
+    let constraintData = null;
+
+    if (ev.constraint_id) {
       try {
         const res = await ParticipantService.getConstraintById(
-          event.constraint_id
+          ev.constraint_id
         );
-        c = res.data;
+        constraintData = res.data;
       } catch {}
     }
 
-    setConstraint(c);
+    let defaultCount = 1;
+    if (constraintData) {
+      if (constraintData.booking_type === "single") {
+        defaultCount = 1;
+      } else if (
+        constraintData.booking_type === "multiple" &&
+        constraintData.fixed
+      ) {
+        defaultCount = constraintData.upper_limit;
+      } else {
+        defaultCount = 1;
+      }
+    }
 
-    if (!c || c.booking_type === "single") {
-      setParticipantsCount(1);
+    setSession({
+      event: ev,
+      constraint: constraintData,
+      count: defaultCount,
+      participants: [],
+      slot: null,
+    });
+
+    if (!constraintData || constraintData.booking_type === "single") {
       setOpenDetails(true);
       return;
     }
 
-    if (c.booking_type === "multiple" && c.fixed) {
-      setParticipantsCount(c.upper_limit || 1);
+    if (constraintData.booking_type === "multiple" && constraintData.fixed) {
       setOpenDetails(true);
       return;
     }
@@ -109,24 +133,31 @@ export default function ParentEventEventsPage() {
     setOpenCount(true);
   };
 
+  // -----------------------------------------------------------
+  // PARTICIPANT DETAILS COMPLETED
+  // -----------------------------------------------------------
   const finishParticipants = (list) => {
-    setParticipantsData(list);
+    setSession((s) => ({ ...s, participants: list }));
     setOpenDetails(false);
     setOpenSlot(true);
   };
 
+  // -----------------------------------------------------------
+  // PICK SLOT + ADD TO CART
+  // -----------------------------------------------------------
   const chooseSlot = async (slot) => {
     try {
       const cart = await ParticipantService.getOrCreateCart();
-      const cartItem = await ParticipantService.createCartItem({
+
+      const cartItemRes = await ParticipantService.createCartItem({
         cart: cart.data.id,
-        event: activeEvent.id,
-        participants_count: participantsCount,
+        event: session.event.id,
+        participants_count: session.count,
       });
 
-      const itemId = cartItem.data.id;
+      const itemId = cartItemRes.data.id;
 
-      for (const p of participantsData) {
+      for (const p of session.participants) {
         await ParticipantService.createTempBooking({
           cart_item: itemId,
           name: p.name,
@@ -142,24 +173,21 @@ export default function ParentEventEventsPage() {
 
       showToast("Added to cart!");
     } catch (err) {
-      showToast("Failed to add to cart", "error");
+      showToast(err.response?.data?.detail || "Failed to add to cart", "error");
     }
 
+    setSession(initialSession);
     setOpenSlot(false);
-    setActiveEvent(null);
   };
 
-  // ---------- direct slot booking from modal ----------
-  const directSlotStart = (slot) => {
-    // open same add-to-cart flow but starting at participant modal
+  // ---------- DIRECT SLOT BOOKING FROM VIEW MODAL ----------
+  const directSlotStart = () => {
     startAddToCart(viewEvent);
-    // user will pick slot afterwards in slot modal
   };
 
-  // ---------- UI ----------
   return (
     <div className="relative max-w-7xl mx-auto px-6 py-10 overflow-hidden">
-      {/* bg fx */}
+      {/* Background FX */}
       <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
         <motion.div
           animate={{ y: [0, -40, 0] }}
@@ -173,7 +201,7 @@ export default function ParentEventEventsPage() {
         />
       </div>
 
-      {/* header */}
+      {/* Header */}
       <button
         onClick={() => nav(-1)}
         className="flex items-center gap-2 text-purple-700 font-semibold mb-6"
@@ -185,7 +213,7 @@ export default function ParentEventEventsPage() {
         {parentName}
       </h1>
 
-      {/* grid */}
+      {/* Event Grid */}
       {fetching ? (
         <div className="text-center text-gray-500 py-20">Loading…</div>
       ) : (
@@ -226,7 +254,7 @@ export default function ParentEventEventsPage() {
                 </p>
               </div>
 
-              {/* hover buttons */}
+              {/* Hover CTA Buttons */}
               <div className="absolute inset-x-0 bottom-0 p-4 bg-white/80 backdrop-blur-xl translate-y-full group-hover:translate-y-0 transition-all">
                 <div className="flex gap-3">
                   <button
@@ -235,6 +263,7 @@ export default function ParentEventEventsPage() {
                   >
                     Add to Cart
                   </button>
+
                   <button
                     onClick={() => setViewEvent(ev)}
                     className="flex-1 py-2 rounded-xl bg-white border border-purple-300 text-purple-600 font-semibold"
@@ -248,25 +277,25 @@ export default function ParentEventEventsPage() {
         </div>
       )}
 
-      {/* ========== Big Modal ========== */}
+      {/* ---------- VIEW EVENT DETAILS MODAL ---------- */}
       <EventFullDetailsModal
         event={viewEvent}
         open={!!viewEvent}
         onClose={() => setViewEvent(null)}
         onAddToCart={() => startAddToCart(viewEvent)}
-        onSlotDirectStart={(slot) => directSlotStart(slot)}
+        onSlotDirectStart={directSlotStart}
       />
 
-      {/* ---- reused add-to-cart modals ---- */}
+      {/* ---------- ADD TO CART MODALS ---------- */}
       <ParticipantCountModal
         open={openCount}
         onClose={() => {
           setOpenCount(false);
-          setActiveEvent(null);
+          setSession(initialSession);
         }}
-        constraint={constraint}
+        constraint={session.constraint}
         onChoose={(n) => {
-          setParticipantsCount(n);
+          setSession((s) => ({ ...s, count: n }));
           setOpenCount(false);
           setOpenDetails(true);
         }}
@@ -276,9 +305,9 @@ export default function ParentEventEventsPage() {
         open={openDetails}
         onClose={() => {
           setOpenDetails(false);
-          setActiveEvent(null);
+          setSession(initialSession);
         }}
-        count={participantsCount}
+        count={session.count}
         onComplete={finishParticipants}
       />
 
@@ -286,15 +315,15 @@ export default function ParentEventEventsPage() {
         open={openSlot}
         onClose={() => {
           setOpenSlot(false);
-          setActiveEvent(null);
+          setSession(initialSession);
         }}
-        event={activeEvent}
-        participantsCount={participantsCount}
+        event={session.event}
+        participantsCount={session.count}
         onPick={chooseSlot}
         fetchSlots={(id) => ParticipantService.getEventSlots(id)}
       />
 
-      {/* toast */}
+      {/* ---------- TOAST ---------- */}
       <AnimatePresence>
         {alert.open && (
           <motion.div

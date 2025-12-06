@@ -70,15 +70,6 @@ function App() {
           />
 
           <Route
-            path="/admin/bookings"
-            element={
-              <PrivateRoute allowedRoles={["admin", "organiser"]}>
-                <NavBar content={<AdminBookingsPage />} />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
             path="/admin/checkin/:eventId"
             element={
               <PrivateRoute allowedRoles={["admin", "organiser"]}>
@@ -90,7 +81,9 @@ function App() {
           <Route
             path="/parent-events"
             element={
-              <PrivateRoute allowedRoles={["participant", "organiser"]}>
+              <PrivateRoute
+                allowedRoles={["participant", "organiser", "admin"]}
+              >
                 <NavBar content={<ParentEventsPage />} />
               </PrivateRoute>
             }
@@ -98,7 +91,9 @@ function App() {
           <Route
             path="/parent/:parentId"
             element={
-              <PrivateRoute allowedRoles={["participant", "organiser"]}>
+              <PrivateRoute
+                allowedRoles={["participant", "organiser", "admin"]}
+              >
                 <NavBar content={<ParentEventEventsPage />} />
               </PrivateRoute>
             }
@@ -107,7 +102,7 @@ function App() {
           <Route
             path="/events"
             element={
-              <PrivateRoute allowedRoles={["admin", "organiser"]}>
+              <PrivateRoute allowedRoles={["admin", "organiser", "admin"]}>
                 <NavBar content={<EventGrid />} />
               </PrivateRoute>
             }
@@ -117,7 +112,9 @@ function App() {
           <Route
             path="/browse-events"
             element={
-              <PrivateRoute allowedRoles={["participant", "organiser"]}>
+              <PrivateRoute
+                allowedRoles={["participant", "organiser", "admin"]}
+              >
                 <NavBar content={<ParticipantEventGrid />} />
               </PrivateRoute>
             }
@@ -126,7 +123,9 @@ function App() {
           <Route
             path="/cart"
             element={
-              <PrivateRoute allowedRoles={["participant", "organiser"]}>
+              <PrivateRoute
+                allowedRoles={["participant", "organiser", "admin"]}
+              >
                 <NavBar content={<CartPage />} />
               </PrivateRoute>
             }
@@ -157,7 +156,9 @@ function App() {
           <Route
             path="/checkout"
             element={
-              <PrivateRoute allowedRoles={["participant", "organiser"]}>
+              <PrivateRoute
+                allowedRoles={["participant", "organiser", "admin"]}
+              >
                 <NavBar content={<CheckoutPage />} />
               </PrivateRoute>
             }
@@ -165,7 +166,9 @@ function App() {
           <Route
             path="/booking-success/:id"
             element={
-              <PrivateRoute allowedRoles={["participant", "organiser"]}>
+              <PrivateRoute
+                allowedRoles={["participant", "organiser", "admin"]}
+              >
                 <BookingSuccessPage />
               </PrivateRoute>
             }

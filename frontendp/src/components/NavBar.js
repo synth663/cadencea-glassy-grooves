@@ -40,13 +40,12 @@ function getNavItems(user) {
 
   if (user.role === "admin" || user.role === "organiser") {
     return [
-      { text: "Events", path: "/events", icon: <Layers className="w-6 h-6" /> },
-      {
-        text: "All Bookings",
-        path: "/admin/bookings",
-        icon: <Calendar className="w-6 h-6" />,
-      },
       ...shared,
+      {
+        text: "Manage Events",
+        path: "/events",
+        icon: <Layers className="w-6 h-6" />,
+      },
     ];
   }
 

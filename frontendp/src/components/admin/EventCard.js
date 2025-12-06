@@ -42,6 +42,16 @@ export default function EventCard({
     }
   };
 
+  const handleOrganisersClick = () => {
+    if (event.organisers && event.organisers.length > 0) {
+      // edit existing organisers
+      onEditOrganisers(event.id, event.organisers);
+    } else {
+      // add new organisers
+      onAddOrganisers(event.id);
+    }
+  };
+
   return (
     <motion.div
       variants={cardVariants}
@@ -99,7 +109,7 @@ export default function EventCard({
           </div>
         </div>
 
-        {/* ----------------- BUTTON GRID (3 rows) ----------------- */}
+        {/* ----------------- BUTTON GRID ----------------- */}
         <div className="grid grid-cols-2 gap-2">
           {/* ---- Row 1 ---- */}
           <AnimatedButton primary onClick={() => onEditEvent(event)}>
@@ -136,12 +146,19 @@ export default function EventCard({
             <CheckCircle className="w-4 h-4" /> Attendance
           </AnimatedButton>
 
-          {role === "admin" ? (
+          {/* ⭐ NEW: Organisers button ⭐ */}
+          <AnimatedButton onClick={handleOrganisersClick}>
+            <Users className="w-4 h-4" />
+            {event.organisers && event.organisers.length > 0
+              ? "Edit Organisers"
+              : "Add Organisers"}
+          </AnimatedButton>
+
+          {/* ---- Row 4 (Delete for admin) ---- */}
+          {role === "admin" && (
             <AnimatedButton danger onClick={handleDelete}>
               <Trash2 className="w-4 h-4" /> Delete
             </AnimatedButton>
-          ) : (
-            <div></div>
           )}
         </div>
       </div>

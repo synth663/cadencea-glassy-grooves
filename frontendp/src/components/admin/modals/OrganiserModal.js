@@ -52,7 +52,7 @@ export default function OrganiserModal({
   );
 
   const handleSave = async () => {
-    await EventService.updateEvent(eventId, { organisers: assigned });
+    await EventService.updateEventJson(eventId, { organisers: assigned });
     refreshEvents();
     onClose();
   };
