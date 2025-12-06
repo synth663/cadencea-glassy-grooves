@@ -147,7 +147,7 @@ npm install
 ### **3️⃣ Run the frontend**
 
 ```
-npm run dev
+npm start
 ```
 
 The frontend now runs at:
