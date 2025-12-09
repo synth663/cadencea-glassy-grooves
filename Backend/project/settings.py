@@ -6,10 +6,6 @@ from datetime import timedelta
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
-
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
@@ -21,6 +17,12 @@ SECRET_KEY = 'django-insecure-0npo4&-ne8grl#s8tfu3qz2nt=1ei$x3_uqzght7dth%!d&&x*
 DEBUG = True
 
 ALLOWED_HOSTS = []
+
+import os
+
+MEDIA_URL = "/media/"
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
+
 
 
 # Application definition
@@ -55,6 +57,7 @@ MIDDLEWARE = [
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
+    "https://0knfjgj8-3000.inc1.devtunnels.ms"
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -78,23 +81,23 @@ REST_FRAMEWORK = {
     ]
 }
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=10),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
-    "ROTATE_REFRESH_TOKENS": True,
-    "BLACKLIST_AFTER_ROTATION": True,
-
+    "ROTATE_REFRESH_TOKENS": False,
+    "BLACKLIST_AFTER_ROTATION": False,
     "UPDATE_LAST_LOGIN": False,
 
     'AUTH_COOKIE': 'access_token',  # Cookie name for the access token
     'AUTH_COOKIE_REFRESH': 'refresh_token',  # Cookie name for the refresh token
-    'AUTH_COOKIE_SECURE': True,  # Set to True if using HTTPS
+    'AUTH_COOKIE_SECURE': False,  # Set to True if using HTTPS
     'AUTH_COOKIE_HTTP_ONLY': True,  # Make the cookie HTTP only
     'AUTH_COOKIE_PATH': '/',  # Root path for the cookie
     'AUTH_COOKIE_SAMESITE': 'Lax',  # Adjust according to your needs
 
 }
-CSRF_COOKIE_SECURE = True
-SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = False
+
 
 
 TEMPLATES = [
@@ -128,7 +131,6 @@ DATABASES = {
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
-
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -158,7 +160,7 @@ USE_TZ = True
 
 
 # Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.2/howto/static-files/
+# https://docs.djangoproject.com/en/5.0/howto/static-files/
 
 STATIC_URL = 'static/'
 
@@ -170,9 +172,3 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Razorpay Settings
 RAZORPAY_KEY_ID = config('RAZORPAY_KEY_ID', default='rzp_test_ROhm8gRpTv2xUm')
 RAZORPAY_KEY_SECRET = config('RAZORPAY_KEY_SECRET', default='AOX9CU7x2sCR2Sp8XYv3lFoq')
-
-#OTP AUTH SETTINGS
-MAX_OTP_TRY = 5
-#line 57 AUTH_USER_MODEL = 'base.User'
-OTP_EXPIRY_TIME = 10  # in minutes
-MIN_PASSWORD_LENGTH = 8

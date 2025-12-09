@@ -1,18 +1,8 @@
-from django.urls import path, include
-from .views import *
-from rest_framework.routers import DefaultRouter
-from django.conf.urls.static import static
-
-router = DefaultRouter()
-
-
-
-router = DefaultRouter()
-router.register(r'songs', SongViewSet, basename='song')
+from django.urls import path
+from .views import SongUploadView, SongListView, SongDetailView
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path("songs/upload/", SongUploadView.as_view(), name="song-upload"),
+    path("songs/", SongListView.as_view(), name="song-list"),
+    path("songs/<int:pk>/", SongDetailView.as_view(), name="song-detail"),
 ]
-
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

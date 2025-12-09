@@ -4,13 +4,13 @@ from django.contrib.auth.models import AbstractUser
 # Custom User model with role support
 class User(AbstractUser):
     ROLE_CHOICES = [
-        ('admin', 'Admin'),
-        ('staff', 'Staff'),
-        ('doctor', 'Doctor'),
-        ('patient', 'Patient'),
-    ]
+    ('admin', 'Admin'),
+    ('client', 'Client'),
+]
 
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='patient')
+
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='client')
+
 
     def __str__(self):
         return f"{self.username} ({self.role})"

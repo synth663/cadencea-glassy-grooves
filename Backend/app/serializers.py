@@ -1,18 +1,50 @@
 from rest_framework import serializers
-from .models import *
-from datetime import datetime, timedelta
-import random
-from django.conf import settings
+from .models import Song, SongLyricLine, Artist
 
-#------------------------------
-#  📋 USER SERIALIZER
-#------------------------------
+class SongLyricLineSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SongLyricLine
+        fields = ["timestamp", "text"]
+
 
 class SongSerializer(serializers.ModelSerializer):
-    user = serializers.StringRelatedField(read_only=True)
+    lyrics = SongLyricLineSerializer(many=True, read_only=True)
 
     class Meta:
         model = Song
-        fields = ['id', 'user', 'name', 'file']
-        read_only_fields = ['user']
+        fields = [
+            "id", "title", "artist", "language", "genre",
+            "cover_image", "audio_file", "duration", "lyrics"
+        ]
 
+
+class SongUploadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Song
+        fields = [
+            "title", "artist", "language", "genre",
+            "cover_image", "audio_file", "lrc_file",
+            "duration"
+        ]
+
+    def create(self, validated_data):
+        from .utils import parse_lrc
+        from .models import SongLyricLine
+
+        lrc_file = validated_data.get("lrc_file")
+
+        # Save the song first
+        song = Song.objects.create(**validated_data)
+
+        # Parse the LRC
+        lrc_text = lrc_file.read().decode("utf-8")
+        parsed_lines = parse_lrc(lrc_text)
+
+        # Create lyric lines
+        bulk_list = [
+            SongLyricLine(song=song, timestamp=line["timestamp"], text=line["text"])
+            for line in parsed_lines
+        ]
+        SongLyricLine.objects.bulk_create(bulk_list)
+
+        return song
