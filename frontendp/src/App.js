@@ -12,7 +12,7 @@ import ProfilePage from "./components/home/ProfilePage";
 
 import NavBar from "./components/NavBar";
 
-import Login from "./routes/login";
+import LandingPage from "./routes/LandingPage";
 import Register from "./routes/register";
 
 import { Home } from "./components/home/Home";
@@ -27,7 +27,7 @@ function App() {
       <AuthProvider>
         <Routes>
           {/* ---------- PUBLIC ROUTES ---------- */}
-          <Route path="/login" element={<Login />} />
+          <Route path="/login" element={<LandingPage/>} />
           <Route path="/register" element={<Register />} />
 
           {/* ---------- PRIVATE ROUTES ---------- */}

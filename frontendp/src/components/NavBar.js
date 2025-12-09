@@ -13,7 +13,6 @@ import {
   ShoppingCart,
   Home as HomeIcon,
   Ticket,
-  Calendar,
 } from "lucide-react";
 
 function getNavItems(user) {
@@ -68,11 +67,11 @@ export default function NavBar({ content }) {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-[#05050a] text-white">
       {/* TOP NAVBAR */}
       <header
-        className="fixed inset-x-0 top-0 z-50 bg-white/90 backdrop-blur-md 
-                         border-b border-purple-200 shadow-sm"
+        className="fixed inset-x-0 top-0 z-50 bg-black/60 backdrop-blur-lg
+                         border-b border-white/5 shadow-lg"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
@@ -80,17 +79,22 @@ export default function NavBar({ content }) {
             <div className="flex items-center gap-4">
               <button
                 onClick={toggle}
-                className="p-2 rounded-md hover:bg-gray-100 md:hidden"
+                className="p-2 rounded-md hover:bg-white/5 md:hidden transition-colors"
+                aria-label="Open menu"
               >
-                <Menu className="w-6 h-6 text-gray-700" />
+                <Menu className="w-6 h-6 text-white/80" />
               </button>
 
-              <Link to="/" className="flex items-center gap-2">
-                <div className="w-10 h-10 rounded-xl bg-purple-700 flex items-center justify-center shadow-md">
-                  <span className="text-white text-xl font-bold">U</span>
+              <Link to="/" className="flex items-center gap-3">
+                {/* Cadencea logo / badge */}
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#7c3aed] to-[#ff4da6] flex items-center justify-center shadow-lg">
+                  <span className="text-white text-lg font-extrabold">C</span>
                 </div>
-                <span className="text-gray-900 font-semibold text-lg">
-                  UnifyEvents
+
+                <span className="text-white font-semibold text-lg tracking-wide select-none">
+                  <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#8b5cf6] via-[#c084fc] to-[#ff6b9f]">
+                    Cadencea
+                  </span>
                 </span>
               </Link>
             </div>
@@ -101,15 +105,21 @@ export default function NavBar({ content }) {
                 <Link
                   to={item.path}
                   key={item.text}
-                  className="relative px-4 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                  className={`relative px-4 py-2 rounded-lg text-sm text-white/80 hover:bg-white/5 flex items-center gap-2 transition-all`}
                 >
-                  {item.icon}
-                  {item.text}
+                  {React.cloneElement(item.icon, {
+                    className: "w-5 h-5 text-white/70",
+                  })}
+                  <span className="whitespace-nowrap">{item.text}</span>
 
                   {isActive(item.path) && (
                     <motion.div
                       layoutId="navbar-underline"
-                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-purple-600 rounded-full"
+                      className="absolute bottom-0 left-4 right-4 h-0.5 rounded-full"
+                      style={{
+                        background:
+                          "linear-gradient(90deg,#ad30de,#ff4da6)",
+                      }}
                     />
                   )}
                 </Link>
@@ -117,16 +127,21 @@ export default function NavBar({ content }) {
             </nav>
 
             {/* RIGHT ICONS */}
-            <div className="hidden md:flex gap-3">
-              <Link to="/profile" className="p-2 rounded-lg hover:bg-gray-100">
-                <User className="w-6 h-6 text-purple-700" />
+            <div className="hidden md:flex gap-3 items-center">
+              <Link
+                to="/profile"
+                className="p-2 rounded-lg hover:bg-white/5 transition-colors"
+                title="Profile"
+              >
+                <User className="w-6 h-6 text-[#c4b5fd]" />
               </Link>
 
               <button
                 onClick={handleLogout}
-                className="p-2 rounded-lg hover:bg-gray-100"
+                className="p-2 rounded-lg hover:bg-white/5 transition-colors"
+                title="Logout"
               >
-                <LogOut className="w-6 h-6 text-red-600" />
+                <LogOut className="w-6 h-6 text-[#fb7185]" />
               </button>
             </div>
           </div>
@@ -139,10 +154,10 @@ export default function NavBar({ content }) {
           <>
             <motion.div
               initial={{ opacity: 0 }}
-              animate={{ opacity: 0.4 }}
+              animate={{ opacity: 0.45 }}
               exit={{ opacity: 0 }}
               onClick={() => setOpen(false)}
-              className="fixed inset-0 bg-black/40 z-40"
+              className="fixed inset-0 bg-black/60 z-40"
             />
 
             <motion.aside
@@ -150,14 +165,14 @@ export default function NavBar({ content }) {
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ type: "spring", stiffness: 260, damping: 25 }}
-              className="fixed inset-y-0 left-0 z-50 w-72 bg-white shadow-xl border-r"
+              className="fixed inset-y-0 left-0 z-50 w-72 bg-[#071226] shadow-2xl border-r border-white/5"
             >
-              <div className="p-4 border-b flex items-center gap-3">
-                <div className="w-10 h-10 bg-purple-700 rounded-xl flex items-center justify-center text-white font-bold">
-                  U
+              <div className="p-4 border-b border-white/5 flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-br from-[#7c3aed] to-[#ff4da6] rounded-xl flex items-center justify-center text-white font-bold">
+                  C
                 </div>
-                <span className="text-gray-900 text-lg font-semibold">
-                  UnifyEvents
+                <span className="text-white text-lg font-semibold">
+                  Cadencea
                 </span>
               </div>
 
@@ -169,11 +184,13 @@ export default function NavBar({ content }) {
                       onClick={() => setOpen(false)}
                       className={`flex items-center gap-3 px-4 py-3 rounded-lg ${
                         isActive(item.path)
-                          ? "bg-purple-100 text-purple-700 font-medium"
-                          : "text-gray-800 hover:bg-gray-100"
-                      }`}
+                          ? "bg-gradient-to-r from-[#2a1652] to-[#3b1656] text-white font-medium"
+                          : "text-white/90 hover:bg-white/5"
+                      } transition-colors`}
                     >
-                      {item.icon}
+                      {React.cloneElement(item.icon, {
+                        className: "w-5 h-5 text-white/80",
+                      })}
                       {item.text}
                     </Link>
                   </li>
@@ -184,7 +201,7 @@ export default function NavBar({ content }) {
                     setOpen(false);
                     handleLogout();
                   }}
-                  className="flex w-full items-center gap-3 px-4 py-3 rounded-lg hover:bg-red-50 text-red-600"
+                  className="flex w-full items-center gap-3 px-4 py-3 rounded-lg hover:bg-red-900/30 text-red-400"
                 >
                   <LogOut className="w-5 h-5" />
                   Logout
@@ -197,7 +214,7 @@ export default function NavBar({ content }) {
 
       {/* MOBILE BOTTOM NAVBAR */}
       <nav className="md:hidden fixed bottom-4 inset-x-0 z-50 flex justify-center">
-        <div className="bg-white shadow-2xl border border-gray-200 rounded-3xl px-6 py-3 flex items-center gap-8">
+        <div className="bg-[#071226]/90 shadow-2xl border border-white/5 rounded-3xl px-6 py-3 flex items-center gap-8">
           {[
             { icon: <HomeIcon />, path: "/home" },
             { icon: <BookOpen />, path: "/browse-events" },
@@ -215,10 +232,10 @@ export default function NavBar({ content }) {
               >
                 <motion.div
                   animate={{
-                    scale: active ? 1.25 : 1,
-                    color: active ? "#7c3aed" : "#6b7280",
+                    scale: active ? 1.18 : 1,
+                    color: active ? "#b794f4" : "#9ca3af",
                   }}
-                  className={`text-gray-500`}
+                  className={`text-white/80`}
                 >
                   {React.cloneElement(item.icon, {
                     className: "w-6 h-6",
@@ -228,7 +245,8 @@ export default function NavBar({ content }) {
                 {active && (
                   <motion.div
                     layoutId="mobile-indicator"
-                    className="absolute -bottom-1 w-2 h-2 bg-purple-600 rounded-full"
+                    className="absolute -bottom-1 w-2 h-2"
+                    style={{ background: "#ad30de", borderRadius: 9999 }}
                   />
                 )}
               </Link>
