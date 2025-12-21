@@ -2,107 +2,73 @@ from django.contrib import admin
 from .models import *
 
 
-@admin.register(Organiser)
-class OrganiserAdmin(admin.ModelAdmin):
-    list_display = ['user']
-    search_fields = ['user__username', 'user__email']
+@admin.register(Artist)
+class ArtistAdmin(admin.ModelAdmin):
+    list_display = ("id", "name")
+    search_fields = ("name",)
 
 
-@admin.register(Category)
-class CategoryAdmin(admin.ModelAdmin):
-    list_display = ['name']
-    search_fields = ['name']
-
-
-@admin.register(ParentEvent)
-class ParentEventAdmin(admin.ModelAdmin):
-    list_display = ['name']
-    search_fields = ['name']
-
-
-class EventDetailsInline(admin.StackedInline):
-    model = EventDetails
+class SongLyricLineInline(admin.TabularInline):
+    model = SongLyricLine
+    extra = 0
+    readonly_fields = ("timestamp", "text")
     can_delete = False
-    extra = 0
+
+from django.contrib import admin
+from .models import Song, Artist, SongLyricLine
+from .utils import parse_lrc
 
 
-class ParticipationConstraintInline(admin.StackedInline):
-    model = ParticipationConstraint
-    can_delete = False
-    extra = 0
+@admin.register(Song)
+class SongAdmin(admin.ModelAdmin):
+    list_display = ("id", "title", "artist", "genre", "language", "duration")
+    readonly_fields = ("uploaded_by",)
 
+    def save_model(self, request, obj, form, change):
+        """
+        Called when saving via admin panel.
+        We must parse the LRC file here because DRF serializer is NOT used.
+        """
+        is_new = obj.pk is None  # Detect new uploads
 
-class EventSlotInline(admin.TabularInline):
-    """
-    Show slots under the event page itself to easily manage from admin.
-    """
-    model = EventSlot
-    extra = 0
-    fields = ('date', 'start_time', 'end_time', 'unlimited_participants', 'max_participants',
-              'booked_participants', 'available', 'available_participants')
-    readonly_fields = ('available', 'available_participants')
+        super().save_model(request, obj, form, change)
 
+        # Assign uploader
+        if is_new:
+            obj.uploaded_by = request.user
+            obj.save()
 
-@admin.register(Event)
-class EventAdmin(admin.ModelAdmin):
-    list_display = ['name', 'parent_committee', 'category', 'price', 'exclusivity']
-    search_fields = ['name', 'parent_committee']
-    list_filter = ['category', 'exclusivity']
+        # PARSE LRC ONLY IF FILE WAS UPLOADED OR CHANGED
+        if "lrc_file" in form.changed_data:
+            # Remove old lyrics
+            SongLyricLine.objects.filter(song=obj).delete()
 
-    filter_horizontal = ['organisers']  # nice multi-select UI
+            if obj.lrc_file:
+                lrc_text = obj.lrc_file.read().decode("utf-8-sig")
+                parsed = parse_lrc(lrc_text)
 
-    inlines = [
-        EventDetailsInline,
-        ParticipationConstraintInline,
-        EventSlotInline,
-    ]
-
-
-# CART & BOOKING MODELS
-@admin.register(Cart)
-class CartAdmin(admin.ModelAdmin):
-    list_display = ['id', 'owner', 'is_active', 'created_at']
-    search_fields = ['owner__username', 'owner__email']
-    list_filter = ['is_active', 'created_at']
-
-
-@admin.register(CartItem)
-class CartItemAdmin(admin.ModelAdmin):
-    list_display = ['id', 'cart', 'event', 'participants_count', 'created_at']
-    search_fields = ['event__name', 'cart__owner__username', 'cart__owner__email']
-
-
-@admin.register(TempBook)
-class TempBookAdmin(admin.ModelAdmin):
-    list_display = ['id', 'cart_item', 'name', 'email', 'phone_number']
-    search_fields = ['name', 'email', 'phone_number']
-
-
-@admin.register(TempBookTimeslot)
-class TempBookTimeslotAdmin(admin.ModelAdmin):
-    list_display = ['id', 'cart_item', 'slot']
-    search_fields = ['slot__event__name']
-
-
-# events/admin.py (append)
+                bulk_list = [
+                    SongLyricLine(song=obj, timestamp=line["timestamp"], text=line["text"])
+                    for line in parsed
+                ]
+                SongLyricLine.objects.bulk_create(bulk_list)
 
 
 
-@admin.register(Booking)
-class BookingAdmin(admin.ModelAdmin):
-    list_display = ["id", "user", "status", "payment_status", "total_amount", "created_at"]
-    list_filter = ["status", "payment_status", "created_at"]
-    search_fields = ["user__username", "user__email", "id"]
+@admin.register(SongLyricLine)
+class SongLyricLineAdmin(admin.ModelAdmin):
+    list_display = ("id", "song", "timestamp", "text")
+    list_filter = ("song",)
+    search_fields = ("text", "song__title")
 
-@admin.register(BookedEvent)
-class BookedEventAdmin(admin.ModelAdmin):
-    list_display = ["id", "booking", "event", "participants_count", "unit_price", "line_total", "slot"]
-    list_filter = ["event"]
-    search_fields = ["booking__id", "event__name"]
 
-@admin.register(BookedParticipant)
-class BookedParticipantAdmin(admin.ModelAdmin):
-    list_display = ["id", "booking", "booked_event", "name", "arrived", "checkin_time"]
-    list_filter = ["arrived"]
-    search_fields = ["name", "booking__id", "booked_event__id"]
 
+from django.contrib import admin
+from .models import Recording
+
+
+@admin.register(Recording)
+class RecordingAdmin(admin.ModelAdmin):
+    list_display = ("id", "user", "song", "created_at")
+    list_filter = ("song", "created_at")
+    search_fields = ("user__username", "song__title")

@@ -1,118 +1,77 @@
-import React, { useEffect, useState } from "react";
-import { motion } from "framer-motion";
-import { User, Mail, BadgeCheck, Save } from "lucide-react";
+import React from "react";
 import { useAuth } from "../../context/useAuth";
-import ParticipantService from "../participant/ParticipantService"; // optional if you want updates
+import { motion } from "framer-motion";
+import { User, Mail, Shield } from "lucide-react";
 
-export default function ProfilePage() {
+const ProfilePage = () => {
   const { user } = useAuth();
 
-  // Editable fields (if you want only display, remove setters)
-  const [username, setUsername] = useState(user?.username || "");
-  const [email, setEmail] = useState(user?.email || "");
-  const [role] = useState(user?.role || "");
-  const [saving, setSaving] = useState(false);
-
-  const initials = username ? username.charAt(0).toUpperCase() : "U";
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      // TODO: Connect to backend update endpoint
-      // await ParticipantService.updateProfile({ username, email });
-
-      setTimeout(() => {
-        setSaving(false);
-      }, 600);
-    } catch {
-      setSaving(false);
-    }
-  };
-
   return (
-    <div className="relative min-h-screen px-6 py-10">
-      {/* Background gradient */}
-      <div className="fixed inset-0 bg-gradient-to-br from-pink-100 via-purple-100 to-indigo-200 animate-gradient-xy"></div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800 text-white p-8 flex items-center justify-center">
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="w-full max-w-md bg-gray-900/50 backdrop-blur-xl 
+                   border border-purple-400/20 rounded-2xl p-8 shadow-xl"
+      >
+        {/* Avatar */}
+        <div className="flex justify-center mb-6">
+          <motion.div
+            whileHover={{ scale: 1.05 }}
+            className="w-24 h-24 rounded-full bg-purple-600 
+                       flex items-center justify-center shadow-lg"
+          >
+            <span className="text-4xl font-extrabold">
+              {user?.username?.charAt(0).toUpperCase()}
+            </span>
+          </motion.div>
+        </div>
 
-      <div className="relative z-10 max-w-3xl mx-auto">
-        {/* HEADER */}
-        <motion.h1
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-4xl font-extrabold text-gray-900 mb-8"
-        >
-          Profile
-        </motion.h1>
+        {/* Header */}
+        <h1 className="text-3xl font-extrabold text-center text-purple-300 mb-8">
+          My Profile
+        </h1>
 
-        {/* CARD */}
-        <motion.div
-          initial={{ opacity: 0, y: 15 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white shadow-xl rounded-2xl p-8 border border-purple-100"
-        >
-          {/* Avatar */}
-          <div className="flex justify-center mb-6">
-            <div className="w-24 h-24 rounded-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center text-white text-4xl font-bold shadow-lg">
-              {initials}
-            </div>
-          </div>
+        {/* Profile Fields */}
+        <div className="space-y-5">
+          <ProfileRow
+            icon={<User className="w-5 h-5 text-purple-300" />}
+            label="Username"
+            value={user?.username}
+          />
 
-          {/* FIELDS */}
-          <div className="space-y-6">
-            {/* Username */}
-            <div>
-              <label className="text-sm font-medium text-gray-600 flex items-center gap-2 mb-1">
-                <User className="w-4 h-4 text-purple-600" />
-                Username
-              </label>
-              <input
-                type="text"
-                className="w-full px-4 py-3 rounded-xl border border-purple-200 focus:ring-2 focus:ring-purple-400 outline-none transition"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-              />
-            </div>
+          <ProfileRow
+            icon={<Mail className="w-5 h-5 text-purple-300" />}
+            label="Email"
+            value={user?.email}
+          />
 
-            {/* Email */}
-            <div>
-              <label className="text-sm font-medium text-gray-600 flex items-center gap-2 mb-1">
-                <Mail className="w-4 h-4 text-purple-600" />
-                Email
-              </label>
-              <input
-                type="email"
-                className="w-full px-4 py-3 rounded-xl border border-purple-200 focus:ring-2 focus:ring-purple-400 outline-none transition"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-            </div>
-
-            {/* Role | Non-editable */}
-            <div>
-              <label className="text-sm font-medium text-gray-600 flex items-center gap-2 mb-1">
-                <BadgeCheck className="w-4 h-4 text-purple-600" />
-                Role
-              </label>
-              <div className="px-4 py-3 rounded-xl bg-purple-50 border border-purple-200 text-purple-700 font-medium">
-                {role.toUpperCase()}
-              </div>
-            </div>
-          </div>
-
-          {/* SAVE BUTTON */}
-          <div className="mt-8 flex justify-center">
-            <motion.button
-              whileTap={{ scale: 0.95 }}
-              onClick={handleSave}
-              disabled={saving}
-              className="px-6 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold flex items-center gap-2 shadow-lg hover:shadow-xl transition disabled:opacity-60"
-            >
-              <Save className="w-5 h-5" />
-              {saving ? "Saving..." : "Save Changes"}
-            </motion.button>
-          </div>
-        </motion.div>
-      </div>
+          <ProfileRow
+            icon={<Shield className="w-5 h-5 text-purple-300" />}
+            label="Role"
+            value={user?.role}
+          />
+        </div>
+      </motion.div>
     </div>
   );
-}
+};
+
+const ProfileRow = ({ icon, label, value }) => {
+  return (
+    <motion.div
+      whileHover={{ scale: 1.02 }}
+      className="flex items-center gap-4 p-4 rounded-xl 
+                 bg-gray-800/50 border border-purple-400/10"
+    >
+      <div className="p-2 rounded-lg bg-purple-600/20">{icon}</div>
+      <div>
+        <p className="text-sm text-gray-400">{label}</p>
+        <p className="text-lg font-semibold text-white">{value || "—"}</p>
+      </div>
+    </motion.div>
+  );
+};
+
+export default ProfilePage;

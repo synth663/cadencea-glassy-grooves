@@ -9,33 +9,18 @@ import {
 import { AuthProvider } from "./context/useAuth";
 import PrivateRoute from "./components/private_route";
 import ProfilePage from "./components/home/ProfilePage";
-import AdminBookingsPage from "./components/admin/AdminBookingsPage";
+import RecordingsPage from "./components/client/Recordings/RecordingsPage";
 
-import AdminCheckInPage from "./components/admin/AdminCheckInPage";
-
-// Import the NavBar layout component
 import NavBar from "./components/NavBar";
 
-import MyBookings from "./components/participant/MyBookings";
-import TicketPage from "./components/participant/TicketPage";
-
-// PUBLIC
 import Login from "./routes/login";
 import Register from "./routes/register";
 
-// PRIVATE
 import { Home } from "./components/home/Home";
-// 1. Import the new TestsPage component
 
-import EventGrid from "./components/admin/EventGrid";
-
-import ParticipantEventGrid from "./components/participant/ParticipantEventGrid";
-import CartPage from "./components/participant/CartPage";
-import CheckoutPage from "./components/participant/CheckoutPage";
-
-import ParentEventsPage from "./components/participant/ParentEventsPage";
-import ParentEventEventsPage from "./components/participant/ParentEventEventsPage";
-import BookingSuccessPage from "./components/participant/BookingSuccessPage";
+// 🎤 Karaoke pages
+import SongSelectionPage from "./components/client/SongSelection/SongSelectionPage";
+import SongPlayerPage from "./components/client/SongPlayer/SongPlayerPage";
 
 function App() {
   return (
@@ -51,9 +36,20 @@ function App() {
             path="/home"
             element={
               <PrivateRoute
-                allowedRoles={["admin", "participant", "organiser"]}
+                allowedRoles={["admin", "participant", "organiser", "client"]}
               >
                 <NavBar content={<Home />} />
+              </PrivateRoute>
+            }
+          />
+
+          <Route
+            path="/recordings"
+            element={
+              <PrivateRoute
+                allowedRoles={["admin", "client", "participant", "organiser"]}
+              >
+                <NavBar content={<RecordingsPage />} />
               </PrivateRoute>
             }
           />
@@ -62,120 +58,39 @@ function App() {
             path="/profile"
             element={
               <PrivateRoute
-                allowedRoles={["admin", "participant", "organiser"]}
+                allowedRoles={["admin", "participant", "organiser", "client"]}
               >
                 <NavBar content={<ProfilePage />} />
               </PrivateRoute>
             }
           />
 
+          {/* ---------- KARAOKE ROUTES ---------- */}
+          {/* Song selection list */}
           <Route
-            path="/admin/checkin/:eventId"
+            path="/songs"
             element={
-              <PrivateRoute allowedRoles={["admin", "organiser"]}>
-                <NavBar content={<AdminCheckInPage />} />
+              <PrivateRoute
+                allowedRoles={["admin", "participant", "organiser", "client"]}
+              >
+                <NavBar content={<SongSelectionPage />} />
               </PrivateRoute>
             }
           />
 
+          {/* Song player */}
           <Route
-            path="/parent-events"
+            path="/songs/:id"
             element={
               <PrivateRoute
-                allowedRoles={["participant", "organiser", "admin"]}
+                allowedRoles={["admin", "participant", "organiser", "client"]}
               >
-                <NavBar content={<ParentEventsPage />} />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/parent/:parentId"
-            element={
-              <PrivateRoute
-                allowedRoles={["participant", "organiser", "admin"]}
-              >
-                <NavBar content={<ParentEventEventsPage />} />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
-            path="/events"
-            element={
-              <PrivateRoute allowedRoles={["admin", "organiser", "admin"]}>
-                <NavBar content={<EventGrid />} />
-              </PrivateRoute>
-            }
-          />
-
-          {/* PARTICIPANT EVENTS PAGE */}
-          <Route
-            path="/browse-events"
-            element={
-              <PrivateRoute
-                allowedRoles={["participant", "organiser", "admin"]}
-              >
-                <NavBar content={<ParticipantEventGrid />} />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
-            path="/cart"
-            element={
-              <PrivateRoute
-                allowedRoles={["participant", "organiser", "admin"]}
-              >
-                <NavBar content={<CartPage />} />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
-            path="/my-bookings"
-            element={
-              <PrivateRoute
-                allowedRoles={["participant", "organiser", "admin"]}
-              >
-                <NavBar content={<MyBookings />} />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
-            path="/ticket/:bookedEventId"
-            element={
-              <PrivateRoute
-                allowedRoles={["participant", "organiser", "admin"]}
-              >
-                <NavBar content={<TicketPage />} />
-              </PrivateRoute>
-            }
-          />
-
-          <Route
-            path="/checkout"
-            element={
-              <PrivateRoute
-                allowedRoles={["participant", "organiser", "admin"]}
-              >
-                <NavBar content={<CheckoutPage />} />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/booking-success/:id"
-            element={
-              <PrivateRoute
-                allowedRoles={["participant", "organiser", "admin"]}
-              >
-                <BookingSuccessPage />
+                <SongPlayerPage />
               </PrivateRoute>
             }
           />
 
           {/* ---------- DEFAULT ROUTE ---------- */}
-          {/* Redirects the base URL to /home */}
           <Route path="/" element={<Navigate to="/home" replace />} />
         </Routes>
       </AuthProvider>

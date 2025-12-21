@@ -1,26 +1,12 @@
-# events/urls.py
-
-from rest_framework.routers import DefaultRouter
+from django.urls import path
 from .views import *
 
-router = DefaultRouter()
+urlpatterns = [
+    path("songs/upload/", SongUploadView.as_view(), name="song-upload"),
+    path("songs/", SongListView.as_view(), name="song-list"),
+    path("songs/<int:pk>/", SongDetailView.as_view(), name="song-detail"),
+    path("recordings/", MyRecordingsView.as_view(), name="my-recordings"),
+    path("recordings/upload/", RecordingUploadView.as_view(), name="recording-upload"),
+    
 
-router.register('organisers', OrganiserViewSet)
-router.register('categories', CategoryViewSet)
-router.register('parent-events', ParentEventViewSet)
-router.register('events', EventViewSet)
-router.register('constraints', ParticipationConstraintViewSet)
-router.register('event-details', EventDetailsViewSet)
-router.register('event-slots', EventSlotViewSet)
-router.register("cart", CartViewSet, basename="cart")
-router.register("cartitems", CartItemViewSet, basename="cartitems")
-router.register("tempbookings", TempBookViewSet, basename="tempbookings")
-router.register("temp-timeslots", TempBookTimeslotViewSet, basename="temp-timeslots")
-router.register("booked-participants", BookedParticipantViewSet, basename="booked-participants")
-router.register("bookings", BookingViewSet, basename="bookings")
-router.register("booked-events", BookedEventViewSet, basename="booked-events")
-
-
-
-
-urlpatterns = router.urls
+]

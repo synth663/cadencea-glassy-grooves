@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useAuth } from "../context/useAuth";
 import { useNavigate } from "react-router-dom";
 import { User, Lock } from "lucide-react";
-import "./authbg.css"; // same background + animations
+import "./authbg.css";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -18,38 +18,41 @@ export default function Login() {
 
   return (
     <div className="auth-bg-container no-scroll-bg">
-      {/* 🔥 FLOATING ANIMATED BACKGROUND LAYERS */}
-      <div className="animated-gradient" />
+      {/* 🌌 CONTINUOUS BACKGROUND LAYERS */}
+      <div className="animated-gradient-layer" />
+      <div className="animated-mesh" />
       <div className="orb orb1" />
       <div className="orb orb2" />
       <div className="orb orb3" />
-      <div className="particles" />
+      <div className="floating-particles" />
 
-      {/* 🔥 UNIFY EVENTS TITLE */}
+      {/* 🔥 APP TITLE */}
       <motion.h1
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
         className="unify-title"
       >
         <motion.span
           animate={{
             backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
           }}
-          transition={{ repeat: Infinity, duration: 7, ease: "linear" }}
+          transition={{ repeat: Infinity, duration: 10, ease: "linear" }}
           className="unify-gradient"
         >
-          Unify Events
+          CADENCEA
         </motion.span>
       </motion.h1>
 
-      {/* 🔥 LOGIN CARD */}
+      {/* 🔐 LOGIN CARD */}
       <motion.div
-        initial={{ opacity: 0, y: 40 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="auth-card"
+        initial={{ opacity: 0, y: 50, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+        className="auth-card relative z-10"
       >
         <h2 className="auth-title">Welcome Back</h2>
-        <p className="auth-sub">Login to manage or explore events.</p>
+        <p className="auth-sub">Sing. Record. Relive your voice.</p>
 
         <div className="space-y-6">
           {/* Username */}
@@ -77,8 +80,8 @@ export default function Login() {
 
           {/* Login Button */}
           <motion.button
-            whileHover={{ scale: 1.03 }}
-            whileTap={{ scale: 0.96 }}
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.95 }}
             onClick={handleLogin}
             className="auth-btn"
           >
