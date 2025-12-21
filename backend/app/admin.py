@@ -16,7 +16,8 @@ class SongLyricLineInline(admin.TabularInline):
 
 from django.contrib import admin
 from .models import Song, Artist, SongLyricLine
-from .utils import parse_lrc
+from app.utils.lrc_parser import parse_lrc
+
 
 
 @admin.register(Song)

@@ -28,3 +28,5 @@ def parse_lrc(lrc_text: str):
             })
 
     return lines
+
+

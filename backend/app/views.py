@@ -13,14 +13,14 @@ class SongUploadView(generics.CreateAPIView):
 class SongListView(generics.ListAPIView):
     queryset = Song.objects.all()
     serializer_class = SongSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
 
 # Get single song + audio + lyrics
 class SongDetailView(generics.RetrieveAPIView):
     queryset = Song.objects.all()
     serializer_class = SongSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.AllowAny]
 
 
 from rest_framework import generics, permissions
