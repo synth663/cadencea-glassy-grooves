@@ -35,9 +35,7 @@ function App() {
           <Route
             path="/home"
             element={
-              <PrivateRoute
-                allowedRoles={["admin", "participant", "organiser", "client"]}
-              >
+              <PrivateRoute allowedRoles={["admin", "client"]}>
                 <NavBar content={<Home />} />
               </PrivateRoute>
             }
