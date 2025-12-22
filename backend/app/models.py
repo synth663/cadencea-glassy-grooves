@@ -10,9 +10,9 @@ class Artist(models.Model):
 
 class Song(models.Model):
     title = models.CharField(max_length=255)
-    artist = models.ForeignKey(Artist, on_delete=models.SET_NULL, null=True)
+    artist = models.ForeignKey(Artist, on_delete=models.SET_NULL, null=True, blank = True)
     language = models.CharField(max_length=100)
-    genre = models.CharField(max_length=100)
+    genre = models.CharField(max_length=100, blank = True)
     cover_image = models.ImageField(upload_to="song_covers/")
     audio_file = models.FileField(upload_to="songs/audio/")
     lrc_file = models.FileField(upload_to="songs/lyrics/")

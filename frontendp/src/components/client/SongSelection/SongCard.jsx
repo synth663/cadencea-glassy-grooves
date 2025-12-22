@@ -44,9 +44,6 @@ const SongCard = ({ song }) => {
         <h3 className="text-lg font-semibold text-white truncate">
           {song.title}
         </h3>
-        <p className="text-sm text-gray-400 truncate">
-          {song.artist_name || "Unknown Artist"}
-        </p>
       </div>
     </motion.div>
   );
